@@ -5,8 +5,14 @@ service cloud.firestore {
     // 1. Global Gate & Safety Net
     // Allows absolute server-side actions while securing all other data requests by default
     match /{document=**} {
-      allow read: if resource != null && resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026';
-      allow write: if (request.resource != null && request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026') || (resource != null && resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
+      // Allow reads if document has serverSecret OR if properly authenticated
+      allow read: if (resource != null && resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026') || (isSignedIn() && isSuperAdmin());
+      
+      // Allow writes if request includes serverSecret (server-side operations)
+      allow write: if request.resource != null && request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026';
+      
+      // Also allow deletes if serverSecret is present in current document
+      allow delete: if resource != null && resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026';
     }
 
     // --- GLOBAL SECURE HELPERS ---
@@ -39,8 +45,8 @@ service cloud.firestore {
 
     // 1. Users Collection
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isSuperAdmin() || (isSignedIn() && uidMatches(userId));
+      allow read: if isSignedIn() || (resource != null && resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
+      allow write: if isSuperAdmin() || (isSignedIn() && uidMatches(userId)) || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
 
       function uidMatches(uid) {
         return request.auth.uid == uid;
@@ -50,26 +56,26 @@ service cloud.firestore {
     // 2. Businesses Collection
     match /businesses/{businessId} {
       allow read: if true; // anyone can discover registered salons
-      allow create: if isSuperAdmin();
-      allow update: if isSuperAdmin() || isBusinessAdminOf(resource.data.contactEmail);
-      allow delete: if isSuperAdmin();
+      allow create: if isSuperAdmin() || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
+      allow update: if isSuperAdmin() || isBusinessAdminOf(resource.data.contactEmail) || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
+      allow delete: if isSuperAdmin() || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
     }
 
     // 3. Services Collection
     match /services/{serviceId} {
       allow read: if true; // anyone can inspect salon services
-      allow write: if isSuperAdmin() || isSignedIn(); 
+      allow write: if isSuperAdmin() || isSignedIn() || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
     }
 
     // 4. Staff Collection
     match /staff/{staffId} {
       allow read: if true; // anyone can view service providers
-      allow write: if isSuperAdmin() || isSignedIn();
+      allow write: if isSuperAdmin() || isSignedIn() || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
     }
 
     // 5. Customers Collection (CRM)
     match /customers/{customerId} {
-      allow read, write: if isSuperAdmin() || isSignedIn();
+      allow read, write: if isSuperAdmin() || isSignedIn() || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
     }
 
     // 6. Bookings Collection
@@ -85,18 +91,16 @@ service cloud.firestore {
       allow create: if true;
       
       // Only authorized staff/admins or super admins can update/cancel a booking's status
-      allow update: if isSuperAdmin() || isSignedIn() || (
-        request.resource.data.customerEmail == resource.data.customerEmail
-      );
+      allow update: if isSuperAdmin() || isSignedIn() || (request.resource.data.customerEmail == resource.data.customerEmail) || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
       
-      allow delete: if isSuperAdmin() || isSignedIn();
+      allow delete: if isSuperAdmin() || isSignedIn() || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
     }
 
     // 7. Reviews Collection
     match /reviews/{reviewId} {
       allow read: if true; // public reviews display
       allow create: if true; // guests can write reviews
-      allow update, delete: if isSuperAdmin() || isSignedIn();
+      allow update, delete: if isSuperAdmin() || isSignedIn() || (request.resource.data.get('serverSecret', '') == 'A7xK9_SERVER_SECURE_TOKEN_2026');
     }
 
     // 8. Blogs Collection

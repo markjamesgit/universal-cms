@@ -46,12 +46,25 @@ async function buildApp(): Promise<express.Express> {
         (u) => u.email.trim().toLowerCase() === email && u.role === "SUPER_ADMIN"
       );
 
-      if ((configuredSuperAdmin && email === configuredSuperAdmin) || superAdminUser) {
+      // CRITICAL: Only allow super admin login if EXPLICITLY registered as SUPER_ADMIN role
+      // Do NOT allow merchant users to access admin by just matching SUPER_ADMIN_EMAIL
+      if (superAdminUser) {
         const businesses = dbInstance.getBusinesses();
         return res.json({
           role: "SUPER_ADMIN",
           business: businesses[0] || null,
-          user: superAdminUser || dbInstance.getUserByEmail(email) || null,
+          user: superAdminUser,
+        });
+      }
+
+      // Allow configured super admin EMAIL only if they haven't been registered as merchant yet
+      const user = dbInstance.getUserByEmail(email);
+      if (configuredSuperAdmin && email === configuredSuperAdmin && (!user || user.role === "SUPER_ADMIN")) {
+        const businesses = dbInstance.getBusinesses();
+        return res.json({
+          role: "SUPER_ADMIN",
+          business: businesses[0] || null,
+          user: user || null,
         });
       }
 
