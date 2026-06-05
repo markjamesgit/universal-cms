@@ -1,12 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Calendar as CalendarIcon, Clock, User as UserIcon, Check, CheckCircle, Sparkles, CreditCard, ChevronRight, ChevronLeft, AlertTriangle, RefreshCw } from "lucide-react";
-import { BusinessTenant, Service, Staff, Booking, BlockedSlot, formatTimeSlot } from "../types";
+import { X, Calendar as CalendarIcon, Clock, User as UserIcon, Check, CheckCircle, Sparkles, CreditCard, ChevronRight, ChevronLeft, AlertTriangle, RefreshCw, Mail } from "lucide-react";
+import { BusinessTenant, Service, ServiceVariant, Staff, Booking, BlockedSlot, formatTimeSlot } from "../types";
+import { hasServiceVariants, getEffectivePrice, getBookingServiceLabel } from "../lib/serviceUtils";
+import {
+  EMAIL_PLACEHOLDER,
+  GCASH_REF_PLACEHOLDER,
+  PHONE_PLACEHOLDER,
+  normalizeGcashRefInput,
+  normalizePhoneInput,
+  validateEmail,
+  validateGcashRef,
+  validatePhone,
+} from "../lib/contactFormats";
 
 interface BookingWizardProps {
   business: BusinessTenant;
   services: Service[];
   staffList: Staff[];
   preSelectedService?: Service;
+  preSelectedVariant?: ServiceVariant;
   bookings: Booking[];
   onClose: () => void;
   onSubmit: (bookingDetails: {
@@ -19,6 +31,8 @@ interface BookingWizardProps {
     timeSlot: string;
     notes: string;
     price: number;
+    variantId?: string;
+    variantName?: string;
     paymentMethod?: "cash" | "gcash";
     downpaymentPaid?: number;
     gcashTxnRef?: string;
@@ -30,12 +44,18 @@ export default function BookingWizard({
   services,
   staffList,
   preSelectedService,
+  preSelectedVariant,
   bookings,
   onClose,
   onSubmit,
 }: BookingWizardProps) {
-  const [step, setStep] = useState<number>(preSelectedService ? 2 : 1);
+  const canSkipServiceStep =
+    preSelectedService &&
+    (!hasServiceVariants(preSelectedService) || preSelectedVariant);
+  const [step, setStep] = useState<number>(canSkipServiceStep ? 2 : 1);
   const [selectedService, setSelectedService] = useState<Service | null>(preSelectedService || null);
+  const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(preSelectedVariant || null);
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(preSelectedService?.id || null);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>("");
@@ -58,6 +78,18 @@ export default function BookingWizard({
   const [downpaymentPaid, setDownpaymentPaid] = useState<number>(300);
   const [loading, setLoading] = useState(false);
   const [successBooking, setSuccessBooking] = useState<any | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    phone?: string;
+    gcashRef?: string;
+    downpayment?: string;
+  }>({});
+  const [touched, setTouched] = useState<{
+    email?: boolean;
+    phone?: boolean;
+    gcashRef?: boolean;
+    downpayment?: boolean;
+  }>({});
 
   // States to persist retrieved disabled dates/emergencies
   const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>([]);
@@ -286,8 +318,13 @@ export default function BookingWizard({
     }
   }, [selectedSlots.length]);
 
+  const unitPrice = selectedService ? getEffectivePrice(selectedService, selectedVariant) : 0;
+  const serviceReady =
+    selectedService &&
+    (!hasServiceVariants(selectedService) || selectedVariant);
+
   const handleNext = () => {
-    if (step === 1 && selectedService) setStep(2);
+    if (step === 1 && serviceReady) setStep(2);
     else if (step === 2 && selectedStaff) {
       setStep(3);
       // Auto-set selectedDate to today if not selected yet
@@ -300,37 +337,46 @@ export default function BookingWizard({
   };
 
   const handlePrev = () => {
-    if (step === 1 || (step === 2 && preSelectedService)) {
+    if (step === 1 || (step === 2 && canSkipServiceStep)) {
       onClose();
     } else if (step > 1) {
       setStep(step - 1);
     }
   };
 
+  const minDownpayment = 300 * selectedSlots.length;
+
+  const runContactValidation = () => {
+    const emailError = validateEmail(custEmail);
+    const phoneError = validatePhone(custPhone);
+    const gcashRefError = paymentMethod === "gcash" ? validateGcashRef(gcashTxnRef) : null;
+    const downpaymentError =
+      paymentMethod === "gcash" && downpaymentPaid < minDownpayment
+        ? `Minimum downpayment is ₱${minDownpayment} (₱300 per slot).`
+        : null;
+
+    setFieldErrors({
+      email: emailError || undefined,
+      phone: phoneError || undefined,
+      gcashRef: gcashRefError || undefined,
+      downpayment: downpaymentError || undefined,
+    });
+    setTouched({ email: true, phone: true, gcashRef: true, downpayment: true });
+
+    return !(emailError || phoneError || gcashRefError || downpaymentError);
+  };
+
   const executeBooking = async () => {
-    if (!selectedService || !selectedStaff || selectedSlots.length === 0 || !custName || !custEmail) {
+    if (!selectedService || !selectedStaff || selectedSlots.length === 0 || !custName) {
       alert("Please select at least one calendar date & time slot and complete all requested customer contact details.");
       return;
     }
 
-    if (paymentMethod === "gcash") {
-      if (!gcashTxnRef) {
-        alert("Please input your GCash Transaction Reference Code to verify your downpayment.");
-        return;
-      }
-      if (gcashTxnRef.length < 8) {
-        alert("Please enter a valid 13-digit or standard GCash Reference Code.");
-        return;
-      }
-      const minRequired = 300 * selectedSlots.length;
-      if (downpaymentPaid < minRequired) {
-        alert(`A minimum of ₱${minRequired} downpayment (₱300 per slot) is required via GCash to reserve these appointments.`);
-        return;
-      }
-      if (timerCount === 0) {
-        alert("The secure payment window has expired. Please click 'Refresh Code' to restart the 1-minute timer.");
-        return;
-      }
+    if (!runContactValidation()) return;
+
+    if (paymentMethod === "gcash" && timerCount === 0) {
+      alert("The secure payment window has expired. Please click Retry to restart the 1-minute timer.");
+      return;
     }
 
     setLoading(true);
@@ -346,7 +392,9 @@ export default function BookingWizard({
           date: slot.date,
           timeSlot: slot.timeSlot,
           notes: custNotes,
-          price: selectedService.price,
+          price: unitPrice,
+          variantId: selectedVariant?.id,
+          variantName: selectedVariant?.name,
           paymentMethod: paymentMethod,
           downpaymentPaid: paymentMethod === "gcash" ? Math.floor(downpaymentPaid / selectedSlots.length) : 0,
           gcashTxnRef: paymentMethod === "gcash" ? gcashTxnRef : ""
@@ -362,42 +410,25 @@ export default function BookingWizard({
     }
   };
 
-  const getThemeColorClass = () => {
-    switch (business.theme.primaryPalette) {
-      case "emerald": return "emerald";
-      case "amber": return "amber";
-      case "rose": return "rose";
-      case "violet": return "violet";
-      case "retro-slate": return "sky";
-      default: return "indigo";
-    }
-  };
-
-  const themeColor = getThemeColorClass();
-
-  // Helper styles based on dynamic active palette
-  const pBtnClass = `bg-${themeColor}-600 hover:bg-${themeColor}-500 text-white`;
-  const pTextClass = `text-${themeColor}-400`;
-  const pBorderClass = `border-${themeColor}-500/30`;
-  const pBgClass = `bg-${themeColor}-500/20`;
+  const gcashQrSrc = business.gcashQrImage?.trim() || "";
 
   return (
-    <div id="booking-modal-overlay" className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl bg-[#121216]/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl flex flex-col my-8">
+    <div id="booking-modal-overlay" className={`wizard-overlay ${step < 5 ? "wizard-overlay-scroll" : ""}`}>
+      <div className={`wizard-panel ${step === 5 ? "wizard-panel-success" : ""}`}>
         
         {/* Modal Header */}
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/40">
+        <div className="wizard-header">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-lg">{business.logo}</div>
+            <div className="w-8 h-8 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-lg">{business.logo}</div>
             <div>
-              <h3 className="text-md font-semibold text-white">Book an Appointment</h3>
-              <p className="text-xs text-slate-400">{business.name}</p>
+              <h3 className="text-sm font-semibold text-zinc-900">Book an Appointment</h3>
+              <p className="text-xs text-zinc-600">{business.name}</p>
             </div>
           </div>
           <button 
             id="close-wizard-btn"
             onClick={onClose} 
-            className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="ui-btn-ghost p-1.5 rounded-full text-zinc-500 hover:text-zinc-900"
           >
             <X className="w-5 h-5" />
           </button>
@@ -405,57 +436,94 @@ export default function BookingWizard({
 
         {/* Steps Visual Progress */}
         {step < 5 && (
-          <div className="px-6 py-3 bg-white/[0.02] border-b border-white/5 flex items-center justify-between text-xs text-slate-400 md:px-8">
-            <span className={`${step >= 1 ? "text-white font-medium" : ""}`}>1. Service</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-650" />
-            <span className={`${step >= 2 ? "text-white font-medium" : ""}`}>2. Specialist</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-650" />
-            <span className={`${step >= 3 ? "text-white font-medium text-indigo-400" : ""}`}>3. Schedule</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-650" />
-            <span className={`${step >= 4 ? "text-white font-medium" : ""}`}>4. Confirmation</span>
+          <div className="px-5 py-3 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between text-xs text-zinc-500 md:px-6">
+            <span className={`${step >= 1 ? "text-zinc-900 font-medium" : ""}`}>1. Service</span>
+            <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+            <span className={`${step >= 2 ? "text-zinc-900 font-medium" : ""}`}>2. Specialist</span>
+            <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+            <span className={`${step >= 3 ? "text-zinc-900 font-medium" : ""}`}>3. Schedule</span>
+            <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
+            <span className={`${step >= 4 ? "text-zinc-900 font-medium" : ""}`}>4. Confirmation</span>
           </div>
         )}
 
         {/* Modal Body with Flow Sections */}
-        <div className="p-6 md:p-8 flex-1 overflow-y-auto max-h-[500px]">
+        <div className={`wizard-body ${step === 5 ? "wizard-body-success" : ""}`}>
 
           {/* STEP 1: SELECT SERVICE */}
           {step === 1 && (
             <div className="space-y-4">
-              <h4 className="text-lg font-bold text-white tracking-tight">Select Service</h4>
-              <p className="text-xs text-slate-400">Choose from our premium menu options below:</p>
-              
+              <h4 className="ui-heading">Select Service</h4>
+              <p className="ui-subtext">Choose a service and package if applicable:</p>
+
               <div className="space-y-3 mt-4">
-                {services.map(srv => (
-                  <label 
-                    key={srv.id}
-                    className={`flex items-start justify-between p-4 rounded-xl border transition-all cursor-pointer ${
-                      selectedService?.id === srv.id 
-                        ? `bg-[#1a1b23] border-${themeColor}-500/50 shadow-lg` 
-                        : "bg-white/[0.01] border-white/5 hover:bg-white/[0.03]"
-                    }`}
-                    onClick={() => setSelectedService(srv)}
-                  >
-                    <div className="flex gap-3">
-                      <input 
-                        type="radio" 
-                        name="service-select"
-                        checked={selectedService?.id === srv.id} 
-                        onChange={() => {}} 
-                        className="mt-1"
-                      />
-                      <div>
-                        <span className="text-sm font-semibold text-white block">{srv.name}</span>
-                        <span className="text-xs text-slate-400 block mt-0.5 line-clamp-2">{srv.description}</span>
-                        <span className="inline-block px-2 py-0.5 bg-white/5 rounded text-[10px] text-slate-450 mt-1">{srv.category}</span>
-                      </div>
+                {services.filter((s) => s.isActive !== false).map((srv) => {
+                  const withVariants = hasServiceVariants(srv);
+                  const expanded = expandedServiceId === srv.id;
+                  return (
+                    <div
+                      key={srv.id}
+                      className={`rounded-lg border transition-all ${
+                        selectedService?.id === srv.id ? "border-zinc-900 bg-zinc-50" : "border-zinc-200 bg-white"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="w-full flex items-start justify-between p-4 text-left"
+                        onClick={() => {
+                          setSelectedService(srv);
+                          setSelectedVariant(null);
+                          setExpandedServiceId(withVariants ? srv.id : null);
+                        }}
+                      >
+                        <div className="flex gap-3 min-w-0">
+                          <input type="radio" readOnly checked={selectedService?.id === srv.id} className="mt-1" />
+                          <div className="min-w-0">
+                            <span className="text-sm font-semibold text-zinc-900 block">{srv.name}</span>
+                            <span className="text-sm text-zinc-600 block mt-0.5 line-clamp-2">{srv.description}</span>
+                            <span className="ui-badge mt-1">{srv.category}</span>
+                            {withVariants && (
+                              <span className="text-xs text-zinc-500 block mt-1">{srv.variants!.length} packages — select one below</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <span className="text-sm font-bold text-zinc-900">
+                            {withVariants ? `from ₱${getEffectivePrice(srv)}` : `₱${srv.price}`}
+                          </span>
+                          {!withVariants && <span className="text-xs text-zinc-600 block mt-1">{srv.duration} mins</span>}
+                        </div>
+                      </button>
+
+                      {withVariants && (expanded || selectedService?.id === srv.id) && (
+                        <div className="border-t border-zinc-200 px-4 pb-3 space-y-2">
+                          {srv.variants!.map((variant) => (
+                            <button
+                              key={variant.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedService(srv);
+                                setSelectedVariant(variant);
+                              }}
+                              className={`w-full text-left p-3 rounded-lg border text-sm transition-colors ${
+                                selectedVariant?.id === variant.id
+                                  ? "border-zinc-900 bg-white shadow-sm"
+                                  : "border-zinc-200 hover:bg-zinc-50"
+                              }`}
+                            >
+                              <div className="flex justify-between gap-2">
+                                <span className="font-medium text-zinc-900">{variant.name}</span>
+                                <span className="font-semibold shrink-0">₱{variant.price}</span>
+                              </div>
+                              <p className="text-xs text-zinc-500 mt-1">{variant.description}</p>
+                              <p className="text-xs text-zinc-400 mt-1">{variant.duration} minutes</p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right flex flex-col justify-between h-full min-w-[70px]">
-                      <span className="text-sm font-bold text-white">₱{srv.price}</span>
-                      <span className="text-[11px] text-slate-400 mt-1">{srv.duration} mins</span>
-                    </div>
-                  </label>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -464,9 +532,9 @@ export default function BookingWizard({
           {step === 2 && (
             <div className="space-y-4">
               <div className="mb-2">
-                <span className="text-xs text-indigo-400 uppercase font-bold tracking-wider">{selectedService?.name}</span>
-                <h4 className="text-lg font-bold text-white tracking-tight mt-1">Select Professional</h4>
-                <p className="text-xs text-slate-400">Choose a highly trained resident artist/therapist:</p>
+                <span className="text-xs text-zinc-600 uppercase font-bold tracking-wider">{selectedService?.name}</span>
+                <h4 className="ui-heading mt-1">Select Professional</h4>
+                <p className="ui-subtext">Choose a highly trained resident artist/therapist:</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
@@ -481,18 +549,18 @@ export default function BookingWizard({
                     rating: 5.0,
                     workingHours: { start: "09:00", end: "20:00" }
                   })}
-                  className={`p-4 rounded-xl border flex items-center gap-4 cursor-pointer transition-all ${
+                  className={`p-4 rounded-lg border flex items-center gap-4 cursor-pointer transition-all ${
                     selectedStaff?.id === "any"
-                      ? `bg-indigo-950/20 border-indigo-500/50`
-                      : "bg-white/[0.01] border-white/5 hover:bg-white/[0.04]"
+                      ? "bg-zinc-50 border-zinc-900"
+                      : "bg-white border-zinc-200 hover:bg-zinc-50"
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <div className="w-12 h-12 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-700">
                     <Sparkles className="w-6 h-6" />
                   </div>
                   <div>
-                    <h5 className="text-sm font-bold text-white">Any Professional</h5>
-                    <p className="text-[11px] text-indigo-300">Fastest booking availability</p>
+                    <h5 className="text-sm font-bold text-zinc-900">Any Professional</h5>
+                    <p className="text-xs text-zinc-600">Fastest booking availability</p>
                   </div>
                 </div>
 
@@ -507,17 +575,17 @@ export default function BookingWizard({
                     <div 
                       key={st.id}
                       onClick={() => setSelectedStaff(st)}
-                      className={`p-4 rounded-xl border flex items-center gap-4 cursor-pointer transition-all ${
+                      className={`p-4 rounded-lg border flex items-center gap-4 cursor-pointer transition-all ${
                         selectedStaff?.id === st.id
-                          ? `bg-${themeColor}-500/10 border-${themeColor}-500/50`
-                          : "bg-white/[0.01] border-white/5 hover:bg-white/[0.04]"
+                          ? "bg-zinc-50 border-zinc-900"
+                          : "bg-white border-zinc-200 hover:bg-zinc-50"
                       }`}
                     >
-                      <img src={st.photo || undefined} alt={st.name} className="w-12 h-12 rounded-full object-cover border border-white/20" />
+                      <img src={st.photo || undefined} alt={st.name} className="w-12 h-12 rounded-full object-cover border border-zinc-200" />
                       <div>
-                        <h5 className="text-sm font-bold text-white">{st.name}</h5>
-                        <p className="text-[11px] text-slate-400">{st.position}</p>
-                        <div className="flex items-center gap-1 mt-1 text-[10px] text-yellow-400">
+                        <h5 className="text-sm font-bold text-zinc-900">{st.name}</h5>
+                        <p className="text-xs text-zinc-600">{st.position}</p>
+                        <div className="flex items-center gap-1 mt-1 text-xs text-amber-600">
                           <span>★</span>
                           <span>{st.rating.toFixed(2)}</span>
                         </div>
@@ -533,19 +601,19 @@ export default function BookingWizard({
           {step === 3 && (
             <div className="space-y-4">
               <div className="mb-2">
-                <p className="text-[11px] text-indigo-400 uppercase font-extrabold tracking-wider">{selectedService?.name} • with {selectedStaff?.name}</p>
-                <h4 className="text-lg font-bold text-white tracking-tight mt-1 animate-pulse">Choose Appointed Time Slots</h4>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-zinc-600 uppercase font-extrabold tracking-wider">{selectedService?.name} • with {selectedStaff?.name}</p>
+                <h4 className="ui-heading mt-1">Choose Appointed Time Slots</h4>
+                <p className="ui-subtext">
                   Select premium time slots across any calendar days. Click multiple cells and hours.
                 </p>
               </div>
 
               {/* MONTHLY CALENDAR GRID CONTAINER */}
-              <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl space-y-4">
+              <div className="ui-card-pad space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CalendarIcon className="w-4 h-4 text-indigo-400" />
-                    <span className="text-xs uppercase tracking-widest font-bold text-white">
+                    <CalendarIcon className="w-4 h-4 text-zinc-700" />
+                    <span className="text-xs uppercase tracking-widest font-bold text-zinc-900">
                       {currentMonth.toLocaleString("en-US", { month: "long", year: "numeric" })}
                     </span>
                   </div>
@@ -553,24 +621,24 @@ export default function BookingWizard({
                     <button
                       type="button"
                       onClick={handlePrevMonth}
-                      className="p-1 px-2 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-all bg-white/5 cursor-pointer text-xs flex items-center gap-1"
+                      className="ui-btn py-1 px-2 text-xs"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
-                      <span className="text-[10px]">Prev</span>
+                      <span>Prev</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleNextMonth}
-                      className="p-1 px-2 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-all bg-white/5 cursor-pointer text-xs flex items-center gap-1"
+                      className="ui-btn py-1 px-2 text-xs"
                     >
-                      <span className="text-[10px]">Next</span>
+                      <span>Next</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
                 {/* Day of Week Labels */}
-                <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase font-black text-slate-500 tracking-wider">
+                <div className="grid grid-cols-7 gap-1 text-center text-xs uppercase font-bold text-zinc-500 tracking-wider">
                   <span>Sun</span>
                   <span>Mon</span>
                   <span>Tue</span>
@@ -601,18 +669,18 @@ export default function BookingWizard({
                             setSelectedDate(cell.dateStr);
                           }
                         }}
-                        className={`p-2 rounded-xl border text-center relative flex flex-col items-center justify-center transition-all min-h-[48px] ${
+                        className={`p-2 rounded-lg border text-center relative flex flex-col items-center justify-center transition-all min-h-[48px] ${
                           !cell.isCurrentMonth
-                            ? "bg-transparent border-transparent text-slate-650 opacity-20 pointer-events-none"
+                            ? "bg-transparent border-transparent text-zinc-300 opacity-40 pointer-events-none"
                             : cell.disabled
-                            ? "bg-white/[0.01] border-transparent text-slate-600 line-through cursor-not-allowed opacity-30"
+                            ? "bg-zinc-50 border-transparent text-zinc-400 line-through cursor-not-allowed opacity-50"
                             : isAllDayBlocked
-                            ? "bg-rose-950/20 border-rose-500/30 text-rose-350 hover:bg-rose-950/35"
+                            ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
                             : selectedDate === cell.dateStr
-                            ? `bg-${themeColor}-600 border-${themeColor}-400 text-white font-bold scale-[1.03] shadow-md shadow-${themeColor}-600/30`
+                            ? "bg-zinc-900 border-zinc-900 text-white font-bold scale-[1.03] shadow-sm"
                             : hasSlotsSelected
-                            ? `bg-emerald-950/20 border-emerald-500/40 text-emerald-300 font-bold`
-                            : "bg-white/[0.02] border-white/5 text-slate-300 hover:border-white/20"
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-800 font-bold"
+                            : "bg-white border-zinc-200 text-zinc-700 hover:border-zinc-400"
                         }`}
                       >
                         <span className="text-xs font-semibold">{cell.day}</span>
@@ -620,19 +688,19 @@ export default function BookingWizard({
                         {/* Status Indicator indicators */}
                         <div className="absolute bottom-1 flex items-center justify-center gap-0.5 mt-0.5">
                           {isTodayCell && !selectedDate && !hasSlotsSelected && (
-                            <span className={`w-1 h-1 rounded-full bg-${themeColor}-500`} />
+                            <span className="w-1 h-1 rounded-full bg-zinc-900" />
                           )}
                           {hasSlotsSelected && (
-                            <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                            <span className="w-1 h-1 rounded-full bg-emerald-500" />
                           )}
                           {isAllDayBlocked && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                           )}
                         </div>
 
                         {/* Multi selection overlay pill bubble badge */}
                         {hasSlotsSelected && selectedDate !== cell.dateStr && (
-                          <span className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-[#121216] shadow">
+                          <span className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white shadow">
                             {numSlotsSelectedOnDay}
                           </span>
                         )}
@@ -648,15 +716,15 @@ export default function BookingWizard({
                   const dayFullRemarks = getBlockedSlotRemarks(selectedDate);
                   if (dayFullRemarks) {
                     return (
-                      <div className="p-5 bg-rose-500/10 border border-rose-500/25 text-rose-300 rounded-xl space-y-2 mt-2">
+                      <div className="p-5 bg-red-50 border border-red-200 text-red-800 rounded-lg space-y-2 mt-2">
                         <div className="flex items-center gap-2 font-bold text-sm">
-                          <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                          <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
                           <span>🚫 Notice: Date is Disabled / Emergency Closed</span>
                         </div>
-                        <p className="text-xs text-slate-350 leading-relaxed">
+                        <p className="text-sm text-zinc-700 leading-relaxed">
                           This entire date is not accepting bookings. Please select an alternative calendar date above.
                         </p>
-                        <div className="p-3 bg-rose-950/40 rounded-lg text-xs font-mono border border-rose-500/20">
+                        <div className="p-3 bg-white rounded-lg text-sm font-mono border border-red-200 text-zinc-800">
                           <strong>Reason:</strong> {dayFullRemarks}
                         </div>
                       </div>
@@ -668,8 +736,8 @@ export default function BookingWizard({
                   return (
                     <div className="space-y-4 mt-4">
                       <div>
-                        <p className="text-xs text-slate-300 font-bold block mb-2">
-                          Available Timeslots for <span className="text-indigo-400 font-mono underline font-extrabold">{selectedDate}</span>:
+                        <p className="text-sm text-zinc-800 font-bold block mb-2">
+                          Available Timeslots for <span className="text-zinc-900 font-mono underline font-extrabold">{selectedDate}</span>:
                         </p>
                         
                         <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
@@ -687,20 +755,20 @@ export default function BookingWizard({
                                 type="button"
                                 disabled={isDisabled}
                                 onClick={() => toggleSlotSelection(selectedDate, slot)}
-                                className={`py-2 px-1 text-xs rounded-xl border text-center font-semibold tracking-tight transition-all relative ${
+                                className={`py-2 px-1 text-xs rounded-lg border text-center font-semibold tracking-tight transition-all relative ${
                                   isSlotBlocked
-                                    ? "bg-rose-950/20 border-rose-900/30 text-rose-455/40 line-through cursor-not-allowed"
+                                    ? "bg-red-50 border-red-200 text-red-400 line-through cursor-not-allowed"
                                     : isBooked 
-                                    ? "bg-red-950/15 border-red-950/20 text-red-400/30 line-through cursor-not-allowed" 
+                                    ? "bg-zinc-100 border-zinc-200 text-zinc-400 line-through cursor-not-allowed" 
                                     : isSelected
-                                    ? `bg-emerald-500 text-black font-extrabold border-emerald-400 shadow-md shadow-emerald-500/10 scale-[1.02]`
-                                    : `bg-white/[0.02] border-white/5 text-slate-300 hover:bg-white/[0.06] hover:border-white/20`
+                                    ? "bg-zinc-900 text-white font-bold border-zinc-900 shadow-sm scale-[1.02]"
+                                    : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-400"
                                 }`}
                                 title={isSlotBlocked ? `Management Blocked: ${slotBlockRemarks}` : isBooked ? "Slot Pre-booked" : "Available"}
                               >
                                 {formatTimeSlot(slot)}
                                 {isSelected && (
-                                  <span className="absolute -top-1 -right-1 bg-white text-emerald-600 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] border border-emerald-500 shadow-sm">
+                                  <span className="absolute -top-1 -right-1 bg-white text-zinc-900 rounded-full w-3.5 h-3.5 flex items-center justify-center text-xs border border-zinc-900 shadow-sm">
                                     ✓
                                   </span>
                                 )}
@@ -711,47 +779,47 @@ export default function BookingWizard({
                       </div>
 
                       {dayBlocks.length > 0 && (
-                        <div className="p-3 bg-amber-500/5 border border-amber-500/25 rounded-xl space-y-1.5">
-                          <p className="text-[10px] text-amber-400 font-bold uppercase tracking-wide flex items-center gap-1">
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-1.5">
+                          <p className="text-xs text-amber-800 font-bold uppercase tracking-wide flex items-center gap-1">
                             <AlertTriangle className="w-3.5 h-3.5" /> Emergency Blocked Hours for this Date:
                           </p>
                           <div className="space-y-1">
                             {dayBlocks.map(db => (
-                              <div key={db.id} className="text-slate-300 text-xs font-mono flex items-start gap-1 pb-1 border-b border-white/5 last:border-0 last:pb-0">
-                                <span className="font-bold text-amber-300 shrink-0">[{db.timeSlot ? formatTimeSlot(db.timeSlot) : ""}]:</span>
-                                <span className="text-slate-400">"{db.remarks}"</span>
+                              <div key={db.id} className="text-zinc-700 text-sm font-mono flex items-start gap-1 pb-1 border-b border-zinc-200 last:border-0 last:pb-0">
+                                <span className="font-bold text-amber-700 shrink-0">[{db.timeSlot ? formatTimeSlot(db.timeSlot) : ""}]:</span>
+                                <span className="text-zinc-600">"{db.remarks}"</span>
                               </div>
                             ))}
                           </div>
                         </div>
                       )}
 
-                      <div className="flex gap-4 items-center justify-start text-[10px] text-slate-400 p-2 bg-white/[0.02] rounded-lg">
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Available (Toggle Multi-Select)</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 bg-rose-500 rounded-full"></span> Emergency Blocked</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-950/40 border border-red-500/25"></span> Pre-booked</span>
+                      <div className="flex gap-4 items-center justify-start text-xs text-zinc-600 p-2 bg-zinc-50 rounded-lg border border-zinc-200">
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Available (Toggle Multi-Select)</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full"></span> Emergency Blocked</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-zinc-300 border border-zinc-400"></span> Pre-booked</span>
                       </div>
                     </div>
                   );
                 })()
               ) : (
-                <div className="p-8 border border-white/5 rounded-xl border-dashed text-center text-slate-450 text-xs">
+                <div className="p-8 border border-zinc-200 rounded-lg border-dashed text-center text-zinc-500 text-sm">
                   Please tap a calendar cell day on the grid to display available specialist schedule hours.
                 </div>
               )}
 
               {/* MULTIPLE RESERVATION SUMMARY SHOPPING LIST */}
               {selectedSlots.length > 0 && (
-                <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl space-y-3 mt-4 animate-fadeIn">
-                  <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-white/5 pb-2">
+                <div className="ui-card-pad space-y-3 mt-4">
+                  <div className="flex items-center justify-between text-xs font-extrabold text-zinc-600 uppercase tracking-widest border-b border-zinc-200 pb-2">
                     <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
                       Appointments Chosen Cart ({selectedSlots.length})
                     </span>
                     <button
                       type="button"
                       onClick={() => setSelectedSlots([])}
-                      className="text-[9px] text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 px-2 py-0.5 rounded transition-all cursor-pointer font-bold font-sans"
+                      className="text-xs text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-all cursor-pointer font-bold"
                     >
                       Clear All
                     </button>
@@ -759,19 +827,19 @@ export default function BookingWizard({
                   
                   <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
                     {selectedSlots.map((slot, sIdx) => (
-                      <div key={sIdx} className="flex items-center justify-between bg-white/[0.01] hover:bg-white/[0.03] border border-white/5 p-2 px-3 rounded-xl text-xs gap-3 font-mono">
-                        <div className="flex items-center gap-2 text-slate-300">
-                          <span className="text-emerald-405 font-mono text-[11px]">[{sIdx + 1}]</span>
-                          <span className="text-slate-300 font-mono">{slot.date}</span>
-                          <span className="text-slate-500">at</span>
-                          <span className="text-white font-bold">{formatTimeSlot(slot.timeSlot)}</span>
+                      <div key={sIdx} className="flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 p-2 px-3 rounded-lg text-sm gap-3 font-mono">
+                        <div className="flex items-center gap-2 text-zinc-700">
+                          <span className="text-emerald-700 font-mono text-xs">[{sIdx + 1}]</span>
+                          <span className="text-zinc-700 font-mono">{slot.date}</span>
+                          <span className="text-zinc-500">at</span>
+                          <span className="text-zinc-900 font-bold">{formatTimeSlot(slot.timeSlot)}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedSlots(prev => prev.filter(s => !(s.date === slot.date && s.timeSlot === slot.timeSlot)));
                           }}
-                          className="text-slate-400 hover:text-rose-400 p-1 px-2.5 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer font-sans text-[10px] font-bold"
+                          className="text-zinc-500 hover:text-red-700 p-1 px-2.5 hover:bg-red-50 rounded-lg transition-colors cursor-pointer text-xs font-bold"
                         >
                           Remove
                         </button>
@@ -786,160 +854,215 @@ export default function BookingWizard({
           {/* STEP 4: GUEST DETAILS & CHECKOUT INTEGRATION */}
           {step === 4 && (
             <div className="space-y-4">
-              <h4 className="text-lg font-bold text-white tracking-tight">Booking Confirmation Details</h4>
-              <p className="text-xs text-slate-400">Provide your contact info to trigger real-time customized reminders & receipt dispatches:</p>
+              <h4 className="ui-heading">Booking Confirmation Details</h4>
+              <p className="ui-subtext">Provide your contact info to trigger real-time customized reminders & receipt dispatches:</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-300 block">Full Customer Name *</label>
+                <div>
+                  <label className="ui-label">Full Customer Name *</label>
                   <input 
                     type="text" 
                     value={custName}
                     onChange={(e) => setCustName(e.target.value)}
                     placeholder="e.g. Alice Morgan"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="ui-input"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-300 block">Email Address *</label>
-                  <input 
-                    type="email" 
+                <div>
+                  <label className="ui-label">Email Address *</label>
+                  <input
+                    type="email"
                     value={custEmail}
-                    onChange={(e) => setCustEmail(e.target.value)}
-                    placeholder="e.g. alice@example.com"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    onChange={(e) => {
+                      setCustEmail(e.target.value);
+                      if (touched.email) {
+                        setFieldErrors((prev) => ({ ...prev, email: validateEmail(e.target.value) || undefined }));
+                      }
+                    }}
+                    onBlur={() => {
+                      setTouched((prev) => ({ ...prev, email: true }));
+                      setFieldErrors((prev) => ({ ...prev, email: validateEmail(custEmail) || undefined }));
+                    }}
+                    placeholder={EMAIL_PLACEHOLDER}
+                    className={`ui-input ${touched.email && fieldErrors.email ? "border-red-400" : ""}`}
                   />
+                  {touched.email && fieldErrors.email && (
+                    <p className="ui-field-error">{fieldErrors.email}</p>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-300 block">Mobile Phone Number</label>
-                  <input 
-                    type="tel" 
+                <div>
+                  <label className="ui-label">Mobile Phone Number</label>
+                  <input
+                    type="tel"
                     value={custPhone}
-                    onChange={(e) => setCustPhone(e.target.value)}
-                    placeholder="e.g. +1 (555) 909-1223"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    onChange={(e) => {
+                      const next = normalizePhoneInput(e.target.value);
+                      setCustPhone(next);
+                      if (touched.phone) {
+                        setFieldErrors((prev) => ({ ...prev, phone: validatePhone(next) || undefined }));
+                      }
+                    }}
+                    onBlur={() => {
+                      setTouched((prev) => ({ ...prev, phone: true }));
+                      setFieldErrors((prev) => ({ ...prev, phone: validatePhone(custPhone) || undefined }));
+                    }}
+                    placeholder={PHONE_PLACEHOLDER}
+                    className={`ui-input ${touched.phone && fieldErrors.phone ? "border-red-400" : ""}`}
                   />
+                  {touched.phone && fieldErrors.phone && (
+                    <p className="ui-field-error">{fieldErrors.phone}</p>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-300 block">Important Notes / Service Customizations</label>
+                <div>
+                  <label className="ui-label">Important Notes / Service Customizations</label>
                   <input 
                     type="text" 
                     value={custNotes}
                     onChange={(e) => setCustNotes(e.target.value)}
                     placeholder="e.g. allergic to almond oil, prefer soft blow"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="ui-input"
                   />
                 </div>
               </div>
 
-              {/* Secure Checkout Simulation Toggle: Cash and GCash Payment options */}
-              <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl mt-6 space-y-3">
-                <div className="flex justify-between items-center pb-1 border-b border-white/5">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4.5 h-4.5 text-indigo-400" />
-                    <span className="text-xs font-semibold text-white">Payment Method Options</span>
+              <div className="ui-card-pad mt-6 space-y-4">
+                <div className="flex items-center gap-2 border-b border-zinc-200 pb-3">
+                  <CreditCard className="w-5 h-5 text-zinc-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900">How would you like to pay?</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Choose one option to complete your booking.</p>
                   </div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-widest bg-emerald-950/30 text-emerald-400 px-2 py-0.5 rounded font-extrabold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Direct PG Link
-                  </span>
                 </div>
-                <div className="flex gap-6 text-xs pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 font-medium">
-                    <input 
-                      type="radio" 
-                      name="payment-choice" 
-                      checked={paymentMethod === "cash"} 
-                      onChange={() => setPaymentMethod("cash")} 
-                      className="border-white/10"
-                    />
-                    <span>💵 Pay Cash on Premise</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-300 font-medium">
-                    <input 
-                      type="radio" 
-                      name="payment-choice" 
-                      checked={paymentMethod === "gcash"} 
-                      onChange={() => setPaymentMethod("gcash")} 
-                      className="border-white/10"
-                    />
-                    <span>🔵 Pay via GCash (E-Wallet)</span>
-                  </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("cash")}
+                    className={`payment-option ${paymentMethod === "cash" ? "payment-option-active" : "payment-option-inactive"}`}
+                  >
+                    <p className="text-sm font-semibold text-zinc-900">Pay on arrival</p>
+                    <p className="text-xs text-zinc-500 mt-1">Pay in cash when you arrive for your appointment.</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("gcash")}
+                    className={`payment-option ${paymentMethod === "gcash" ? "payment-option-active" : "payment-option-inactive"}`}
+                  >
+                    <p className="text-sm font-semibold text-zinc-900">GCash downpayment</p>
+                    <p className="text-xs text-zinc-500 mt-1">Send ₱300 per slot via GCash to secure your booking.</p>
+                  </button>
                 </div>
 
                 {/* GCash Scannable QR and Countdown */}
                 {paymentMethod === "gcash" && (
-                  <div className="p-4 bg-indigo-950/15 border border-indigo-500/20 rounded-xl space-y-4 flex flex-col items-center mt-3 animate-fadeIn">
+                  <div className="gcash-payment-panel">
                     <div className="text-center space-y-1">
-                      <p className="text-xs text-white font-bold flex items-center justify-center gap-1.5">
-                        <span className="text-indigo-400 font-mono">🔵</span> Scan QR to pay ₱300 Downpayment
+                      <p className="text-sm font-semibold text-zinc-900">Scan to pay your downpayment</p>
+                      <p className="text-xs text-zinc-500">
+                        Minimum ₱{minDownpayment} required ({selectedSlots.length} slot{selectedSlots.length > 1 ? "s" : ""} × ₱300).
                       </p>
-                      <p className="text-[10px] text-slate-400">At least ₱300 PHP is required to lock dates secure from cancellation.</p>
                     </div>
 
-                    <div className="p-2 bg-white rounded-lg shadow-lg border border-indigo-200">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0055ff&data=GCASH_MERCHANT_${business.id}_DOWNPAYMENT_300`} 
-                        alt="GCash Downpayment scan code" 
-                        className="w-[150px] h-[150px] object-contain"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-
-                    <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/40 p-3 rounded-lg border border-white/5 text-xs text-slate-300">
-                      <div className="flex items-center gap-2">
-                        <span className="text-amber-400 animate-pulse text-sm">⏳</span>
-                        <div>
-                          <p className="font-semibold text-white">QR Code Expiry Window</p>
-                          <p className="text-[10px] text-slate-400">GCash downpayment session locks in 1 minute.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-white text-sm font-black px-3 py-1 bg-neutral-900 border border-white/10 rounded-lg">
-                          {Math.floor(timerCount / 60)}:{String(timerCount % 60).padStart(2, "0")}
-                        </span>
-                        {timerCount === 0 && (
-                          <button 
-                            type="button" 
-                            onClick={resetTimer} 
-                            className="p-1 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-bold flex items-center gap-1 transition-all"
-                          >
-                            <RefreshCw className="w-3 h-3" /> Retry
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Direct Fields Capture */}
-                    <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-slate-300 block font-bold">Downpayment Paid (₱) *</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">₱</span>
-                          <input 
-                            type="number" 
-                            min="300" 
-                            value={downpaymentPaid}
-                            onChange={(e) => setDownpaymentPaid(Math.max(1, Number(e.target.value)))}
-                            disabled={timerCount === 0}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-6 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    <div className="flex justify-center">
+                      {gcashQrSrc ? (
+                        <div className="gcash-qr-frame">
+                          <img
+                            src={gcashQrSrc}
+                            alt="GCash payment QR code"
+                            className="w-40 h-40 object-contain"
                           />
                         </div>
-                        {downpaymentPaid < 300 && (
-                          <p className="text-[9px] text-rose-400 mt-0.5">⚠️ Below minimum deposit requirement of ₱300</p>
+                      ) : (
+                        <div className="gcash-qr-frame w-40 h-40 text-center text-xs text-zinc-500 px-3">
+                          GCash QR not set up yet. Ask the business to upload their QR in Website → Images.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="w-full bg-white border border-zinc-200 rounded-lg p-3 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-zinc-900">Payment window</p>
+                          <p className="text-xs text-zinc-500">Complete payment within 1 minute.</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-mono text-sm font-bold px-3 py-1.5 bg-zinc-100 border border-zinc-200 rounded-lg text-zinc-900">
+                            {Math.floor(timerCount / 60)}:{String(timerCount % 60).padStart(2, "0")}
+                          </span>
+                          {timerCount === 0 && (
+                            <button type="button" onClick={resetTimer} className="ui-btn-primary py-1.5 px-3 text-xs">
+                              <RefreshCw className="w-3 h-3" /> Retry
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="ui-label">Downpayment paid (₱) *</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">₱</span>
+                          <input
+                            type="number"
+                            min={minDownpayment}
+                            value={downpaymentPaid}
+                            onChange={(e) => {
+                              const next = Math.max(1, Number(e.target.value));
+                              setDownpaymentPaid(next);
+                              if (touched.downpayment) {
+                                setFieldErrors((prev) => ({
+                                  ...prev,
+                                  downpayment:
+                                    next < minDownpayment
+                                      ? `Minimum downpayment is ₱${minDownpayment} (₱300 per slot).`
+                                      : undefined,
+                                }));
+                              }
+                            }}
+                            onBlur={() => {
+                              setTouched((prev) => ({ ...prev, downpayment: true }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                downpayment:
+                                  downpaymentPaid < minDownpayment
+                                    ? `Minimum downpayment is ₱${minDownpayment} (₱300 per slot).`
+                                    : undefined,
+                              }));
+                            }}
+                            disabled={timerCount === 0}
+                            className={`ui-input pl-7 ${touched.downpayment && fieldErrors.downpayment ? "border-red-400" : ""}`}
+                          />
+                        </div>
+                        {touched.downpayment && fieldErrors.downpayment && (
+                          <p className="ui-field-error">{fieldErrors.downpayment}</p>
                         )}
                       </div>
 
-                      <div className="space-y-1 font-mono">
-                        <label className="text-[11px] text-slate-300 block font-bold font-sans">GCash Reference Code (13 Digits) *</label>
-                        <input 
-                          type="text" 
+                      <div>
+                        <label className="ui-label">GCash reference code (13 digits) *</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
                           maxLength={13}
-                          placeholder="e.g. 5092003318223"
+                          placeholder={GCASH_REF_PLACEHOLDER}
                           value={gcashTxnRef}
-                          onChange={(e) => setGcashTxnRef(e.target.value.replace(/[^0-9]/g, ""))}
+                          onChange={(e) => {
+                            const next = normalizeGcashRefInput(e.target.value);
+                            setGcashTxnRef(next);
+                            if (touched.gcashRef) {
+                              setFieldErrors((prev) => ({ ...prev, gcashRef: validateGcashRef(next) || undefined }));
+                            }
+                          }}
+                          onBlur={() => {
+                            setTouched((prev) => ({ ...prev, gcashRef: true }));
+                            setFieldErrors((prev) => ({ ...prev, gcashRef: validateGcashRef(gcashTxnRef) || undefined }));
+                          }}
                           disabled={timerCount === 0}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold tracking-wider"
+                          className={`ui-input font-mono tracking-wider ${touched.gcashRef && fieldErrors.gcashRef ? "border-red-400" : ""}`}
                         />
+                        {touched.gcashRef && fieldErrors.gcashRef && (
+                          <p className="ui-field-error">{fieldErrors.gcashRef}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -947,29 +1070,31 @@ export default function BookingWizard({
               </div>
 
               {/* Review summary box before submit */}
-              <div className="bg-gradient-to-r from-indigo-950/10 to-indigo-500/5 border border-indigo-500/15 p-4 rounded-xl space-y-2 text-xs">
-                <div className="flex justify-between text-slate-400">
+              <div className="ui-card-pad space-y-2 text-sm">
+                <div className="flex justify-between text-zinc-600">
                   <span>Selected service:</span>
-                  <span className="text-white font-semibold">{selectedService?.name}</span>
+                  <span className="text-zinc-900 font-semibold">
+                    {selectedService ? getBookingServiceLabel(selectedService, selectedVariant) : ""}
+                  </span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-zinc-600">
                   <span>Schedules with:</span>
-                  <span className="text-white font-semibold">{selectedStaff?.name}</span>
+                  <span className="text-zinc-900 font-semibold">{selectedStaff?.name}</span>
                 </div>
-                <div className="flex flex-col text-slate-400 gap-1">
+                <div className="flex flex-col text-zinc-600 gap-1">
                   <span>Appointed Time Slots ({selectedSlots.length}):</span>
-                  <div className="pl-3 space-y-1 font-mono text-[11px] text-emerald-400">
+                  <div className="pl-3 space-y-1 font-mono text-xs text-emerald-700">
                     {selectedSlots.map((slot, sIdx) => (
                       <div key={sIdx} className="flex justify-between">
                         <span>• {slot.date} at {formatTimeSlot(slot.timeSlot)}</span>
-                        <span>₱{selectedService?.price}.00</span>
+                        <span>₱{unitPrice}.00</span>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="border-t border-white/5 pt-2 flex justify-between text-sm font-extrabold">
-                  <span className="text-indigo-300">Total Treatment Price:</span>
-                  <span className="text-white">₱{(selectedService?.price || 0) * selectedSlots.length}.00</span>
+                <div className="border-t border-zinc-200 pt-2 flex justify-between text-sm font-extrabold">
+                  <span className="text-zinc-700">Total Treatment Price:</span>
+                  <span className="text-zinc-900">₱{unitPrice * selectedSlots.length}.00</span>
                 </div>
               </div>
             </div>
@@ -977,72 +1102,89 @@ export default function BookingWizard({
 
           {/* STEP 5: BOOKING COMPLETED SUCCESS CARD */}
           {step === 5 && successBooking && (
-            <div className="text-center py-6 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto animate-bounce">
-                <CheckCircle className="w-10 h-10" />
-              </div>
-              
-              <div className="space-y-1">
-                <h4 className="text-2xl font-black tracking-tight text-white mb-2 font-sans">Booking Logged Safely!</h4>
-                <p className="text-xs text-slate-355">
-                  {Array.isArray(successBooking) && successBooking.length > 1
-                    ? "Your scheduling requests have been registered under Appointment codes:"
-                    : "Your scheduling request has been registered under Appointment code:"}
-                </p>
-                <div className="flex flex-wrap gap-1.5 justify-center mt-1">
+            <div className="space-y-5">
+              <div className="text-center space-y-3">
+                <div className="wizard-success-icon">
+                  <CheckCircle className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="ui-heading text-lg">Booking logged safely</h4>
+                  <p className="ui-subtext mt-1">
+                    {Array.isArray(successBooking) && successBooking.length > 1
+                      ? "Your appointments are registered with these codes:"
+                      : "Your appointment is registered with this code:"}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center">
                   {Array.isArray(successBooking) ? (
                     successBooking.map((res: any, idx: number) => (
-                      <code key={idx} className="text-xs bg-white/10 px-3 py-1 rounded inline-block text-indigo-350 font-mono font-bold">
+                      <span key={idx} className="wizard-success-code">
                         {res?.booking?.id || "bk-registered"}
-                      </code>
+                      </span>
                     ))
                   ) : (
-                    <code className="text-xs bg-white/10 px-3 py-1 rounded inline-block text-indigo-350 font-mono font-bold">
+                    <span className="wizard-success-code">
                       {successBooking?.booking?.id || "bk-registered"}
-                    </code>
+                    </span>
                   )}
                 </div>
               </div>
 
-              {/* Confetti simulator details */}
-              <div className="p-5 bg-white/[0.02] border border-white/10 rounded-2xl max-w-md mx-auto space-y-4 text-xs text-left font-sans">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded bg-indigo-500/10 text-indigo-400 text-xs mt-0.5">📨</div>
+              <div className="ui-card-pad space-y-3 text-sm">
+                <div className="flex items-start gap-3 pb-3 border-b border-zinc-200">
+                  <Mail className="w-4 h-4 text-zinc-500 mt-0.5 shrink-0" />
                   <div>
-                    <h5 className="font-bold text-white">Dynamic Inbox Dispatch</h5>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Personalized HTML template receipts have been compiled and emailed to <strong>{custEmail}</strong>. You can review the actual sent logs inside the backoffice "Email Logs" tab.
+                    <p className="font-medium text-zinc-900">Confirmation email</p>
+                    <p className="text-zinc-600 mt-0.5">
+                      Sent to <strong>{custEmail}</strong>.
+                      {successBooking?.[0]?.notification?.previewUrl ? (
+                        <>
+                          {" "}Test preview:{" "}
+                          <a
+                            href={successBooking[0].notification.previewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-zinc-900 underline break-all"
+                          >
+                            open email
+                          </a>
+                        </>
+                      ) : successBooking?.[0]?.notification?.success === false ? (
+                        <> Delivery failed — contact the business.</>
+                      ) : (
+                        <> Check your inbox and spam folder.</>
+                      )}
                     </p>
                   </div>
                 </div>
-                <div className="border-t border-white/5 pt-3">
-                  <h6 className="font-semibold text-slate-300 mb-1">Receipt Summary:</h6>
-                  <p className="text-[11px] text-slate-400">• Customer Name: {custName}</p>
-                  <p className="text-[11px] text-slate-400">• Service Selected: {selectedService?.name} (₱{selectedService?.price} each)</p>
-                  <p className="text-[11px] text-slate-400">• Reserved Slots:</p>
-                  <div className="pl-3 text-[11px] text-slate-300 font-mono">
-                    {selectedSlots.map((slot, sIdx) => (
-                      <div key={sIdx}>• {slot.date} at {formatTimeSlot(slot.timeSlot)}</div>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    • Downpayment Paid: {paymentMethod === "gcash" ? `₱${downpaymentPaid} via GCash` : "Cash on Premise"}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-zinc-600">
+                  <p><span className="text-zinc-500">Customer:</span> {custName}</p>
+                  <p><span className="text-zinc-500">Service:</span> {selectedService ? getBookingServiceLabel(selectedService, selectedVariant) : ""}</p>
+                  <p><span className="text-zinc-500">Specialist:</span> {selectedStaff?.name}</p>
+                  <p>
+                    <span className="text-zinc-500">Payment:</span>{" "}
+                    {paymentMethod === "gcash" ? `₱${downpaymentPaid} via GCash` : "Pay on arrival"}
                   </p>
-                  {paymentMethod === "gcash" && (
-                    <p className="text-[11px] text-slate-400">• GCash Reference: {gcashTxnRef}</p>
-                  )}
+                </div>
+                {paymentMethod === "gcash" && (
+                  <p className="text-zinc-600">
+                    <span className="text-zinc-500">GCash ref:</span>{" "}
+                    <span className="font-mono text-zinc-900">{gcashTxnRef}</span>
+                  </p>
+                )}
+                <div className="pt-1 space-y-1 text-zinc-600">
+                  <p className="text-zinc-500 font-medium">Reserved slots</p>
+                  {selectedSlots.map((slot, sIdx) => (
+                    <p key={sIdx} className="font-mono text-xs text-zinc-800">
+                      {slot.date} · {formatTimeSlot(slot.timeSlot)} · ₱{unitPrice}
+                    </p>
+                  ))}
                 </div>
               </div>
 
-              <div className="pt-2">
-                <button
-                  id="celebrate-close-btn"
-                  onClick={onClose}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-emerald-600/20"
-                >
-                  Return to Studio Home
-                </button>
-              </div>
+              <button id="celebrate-close-btn" onClick={onClose} className="ui-btn-primary w-full">
+                Return to studio home
+              </button>
             </div>
           )}
 
@@ -1050,13 +1192,13 @@ export default function BookingWizard({
 
         {/* Modal Footer with Actions Toggle */}
         {step < 5 && (
-          <div className="p-6 border-t border-white/5 bg-black/40 flex items-center justify-between">
+          <div className="wizard-footer">
             <button
               id="prev-step-btn"
               onClick={handlePrev}
-              className="px-4 py-2 border border-white/10 rounded-xl text-xs text-slate-300 hover:bg-white/5 transition-colors"
+              className="ui-btn"
             >
-              {step === 1 || (step === 2 && preSelectedService) ? "Cancel" : "Back"}
+              {step === 1 || (step === 2 && canSkipServiceStep) ? "Cancel" : "Back"}
             </button>
 
             {step < 4 ? (
@@ -1064,16 +1206,16 @@ export default function BookingWizard({
                 id="next-step-btn"
                 onClick={handleNext}
                 disabled={
-                  (step === 1 && !selectedService) || 
-                  (step === 2 && !selectedStaff) || 
+                  (step === 1 && !serviceReady) ||
+                  (step === 2 && !selectedStaff) ||
                   (step === 3 && selectedSlots.length === 0)
                 }
-                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
-                  ((step === 1 && !selectedService) || 
-                   (step === 2 && !selectedStaff) || 
+                className={`ui-btn-primary ${
+                  ((step === 1 && !serviceReady) ||
+                   (step === 2 && !selectedStaff) ||
                    (step === 3 && selectedSlots.length === 0))
-                    ? "bg-white/5 border border-white/5 text-slate-500 cursor-not-allowed"
-                    : pBtnClass
+                    ? "opacity-50 cursor-not-allowed hover:bg-zinc-900"
+                    : ""
                 }`}
               >
                 Continue
@@ -1083,10 +1225,10 @@ export default function BookingWizard({
                 id="execute-booking-btn"
                 onClick={executeBooking}
                 disabled={loading}
-                className={`px-6 py-2 rounded-xl text-xs font-black transition-all shadow-lg text-white ${
+                className={`ui-btn-primary ${
                   loading 
-                    ? "bg-indigo-900/50 cursor-not-allowed animate-pulse" 
-                    : `bg-${themeColor}-600 hover:bg-${themeColor}-500 shadow-${themeColor}-600/20`
+                    ? "opacity-50 cursor-not-allowed animate-pulse" 
+                    : ""
                 }`}
               >
                 {loading ? "Registering Appt..." : "Confirm & Send Email"}

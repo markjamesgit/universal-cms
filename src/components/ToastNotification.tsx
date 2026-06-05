@@ -16,21 +16,18 @@ export default function ToastNotification({ toast, onClose }: ToastProps) {
   return (
     <div
       id="global-toast-notification"
-      className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-[#121216]/95 border border-white/10 p-4 rounded-xl shadow-2xl backdrop-blur-xl flex gap-3 animate-slide-up"
+      className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-white border border-zinc-200 p-4 rounded-lg shadow-lg flex gap-3"
     >
       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-        toast.type === "success" ? "bg-emerald-500/10 text-emerald-400" : "bg-sky-500/10 text-sky-450"
+        toast.type === "success" ? "bg-emerald-50 text-emerald-700" : "bg-zinc-100 text-zinc-600"
       }`}>
         {toast.type === "success" ? <Check className="w-4 h-4" /> : <Info className="w-4 h-4" />}
       </div>
-      <div className="flex-1">
-        <h4 className="text-xs font-bold text-white">{toast.message}</h4>
-        {toast.submessage && <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{toast.submessage}</p>}
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-medium text-zinc-900">{toast.message}</h4>
+        {toast.submessage && <p className="text-xs text-zinc-500 mt-0.5 break-words">{toast.submessage}</p>}
       </div>
-      <button
-        onClick={onClose}
-        className="p-1 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-colors h-fit self-start"
-      >
+      <button type="button" onClick={onClose} className="p-1 hover:bg-zinc-100 rounded text-zinc-400">
         <X className="w-4 h-4" />
       </button>
     </div>

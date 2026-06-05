@@ -37,12 +37,25 @@ export interface SEOConfig {
   ogImage: string;
 }
 
+/** Platform-managed business category template (marketplace + onboarding) */
+export interface CategoryTemplate {
+  id: string;
+  slug: string;
+  label: string;
+  icon: string;
+  description: string;
+  defaultCategories: string[];
+  defaultHeroImage: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 export interface BusinessTenant {
   id: string; // internal UUID
   slug: string; // e.g. "classic-barber", URL-friendly identifier
   name: string;
   logo: string;
-  templateType: "hair-salon" | "nail-salon" | "tattoo-studio" | "makeup-artist" | "generic-coaching";
+  templateType: string;
   aboutText: string;
   heroHeading: string;
   heroSubheading: string;
@@ -54,6 +67,20 @@ export interface BusinessTenant {
   isActive: boolean;
   createdAt: string;
   categories?: string[];
+  heroImage?: string;
+  aboutImage?: string;
+  galleryImages?: string[];
+  /** Admin-uploaded GCash QR for customer downpayments */
+  gcashQrImage?: string;
+}
+
+/** Pricing tier / package under a parent service (e.g. wedding packages) */
+export interface ServiceVariant {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
 }
 
 export interface Service {
@@ -67,6 +94,7 @@ export interface Service {
   image: string;
   staffIds: string[];
   isActive?: boolean;
+  variants?: ServiceVariant[];
 }
 
 export interface Staff {
@@ -109,6 +137,8 @@ export interface Booking {
   timeSlot: string; // e.g. "14:30"
   status: "pending" | "confirmed" | "cancelled";
   price: number;
+  variantId?: string;
+  variantName?: string;
   notes?: string;
   cancellationRemarks?: string;
   paymentMethod?: "cash" | "gcash";

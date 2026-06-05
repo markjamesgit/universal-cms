@@ -1,0 +1,2530 @@
+{
+  "users": [
+    {
+      "id": "u-1",
+      "name": "Super Platform Admin",
+      "email": "admin@platform.com",
+      "bio": "",
+      "photo": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%3E%0A%20%20%20%20%3Crect%20width%3D%22120%22%20height%3D%22120%22%20rx%3D%2260%22%20fill%3D%22%23ec4899%22%2F%3E%0A%20%20%20%20%3Ctext%20x%3D%2260%22%20y%3D%2268%22%20text-anchor%3D%22middle%22%20fill%3D%22%23ffffff%22%20font-size%3D%2242%22%20font-family%3D%22system-ui%2Csans-serif%22%3E%E2%9C%A6%3C%2Ftext%3E%0A%20%20%3C%2Fsvg%3E",
+      "phone": "",
+      "role": "SUPER_ADMIN"
+    },
+    {
+      "id": "u-2",
+      "email": "sarah@chiccuts.com",
+      "name": "Sarah Connor (Owner)",
+      "role": "BUSINESS_ADMIN",
+      "businessId": "b-1"
+    },
+    {
+      "id": "u-3",
+      "name": "David Johnson",
+      "email": "david@chiccuts.com",
+      "role": "STAFF",
+      "businessId": "b-1"
+    },
+    {
+      "id": "u-4",
+      "role": "CUSTOMER",
+      "email": "customer1@gmail.com",
+      "name": "Alex Mercer"
+    }
+  ],
+  "businesses": [
+    {
+      "id": "b-1",
+      "contactEmail": "reservations@chiccuts.com",
+      "heroSubheading": "Premium hair care, hair painting, styling, and texturizing services in a modern, inclusive space.",
+      "seo": {
+        "ogImage": "chic_cuts_preview",
+        "metaTitle": "Chic Cuts - Luxury Hair Salon & Color Specialists",
+        "metaDescription": "Book top hair treatments, balayage, cut and styling at Chic Cuts Austin."
+      },
+      "isActive": true,
+      "contactAddress": "452 Premium Blvd, Suite C, Austin TX",
+      "logo": "💇‍♀️",
+      "templateType": "hair-salon",
+      "heroHeading": "Revitalize Your Hair, Express Your Personal Style",
+      "name": "Chic Cuts Hair Salon",
+      "aboutText": "Founded in 2020, Chic Cuts is dedicated to high-end hair transformations. Our certified color specialists use state-of-the-art formulations to keep your hair healthy, bright, and resilient.",
+      "theme": {
+        "bannerStyle": "split",
+        "primaryPalette": "indigo",
+        "buttonStyle": "rounded",
+        "fontFamily": "mono"
+      },
+      "contactPhone": "+1 (555) 123-4567",
+      "slug": "chic-cuts",
+      "createdAt": "2026-01-10T11:00:00Z"
+    },
+    {
+      "id": "b-2",
+      "theme": {
+        "bannerStyle": "minimal",
+        "primaryPalette": "rose",
+        "fontFamily": "serif",
+        "buttonStyle": "pill"
+      },
+      "aboutText": "At Vivid Nails, hygiene and custom detail-driven art are our priorities. We offer high-performance organic products, custom gel painting, and sensory pedicure paths under strict medical-grade sterilization.",
+      "createdAt": "2026-02-15T09:30:00Z",
+      "slug": "vivid-nails",
+      "contactPhone": "+1 (555) 890-4411",
+      "templateType": "nail-salon",
+      "logo": "💅",
+      "name": "Vivid Nails & Spa",
+      "heroHeading": "Exquisite Nail Artistry & Organic Spa Pampering",
+      "isActive": true,
+      "seo": {
+        "ogImage": "vivid_nails_preview",
+        "metaTitle": "Vivid Nails - Advanced Nail Artistry & Hand Spa",
+        "metaDescription": "Book certified polygel extensions and customized manicure gel styling."
+      },
+      "contactAddress": "108 Wellness Circle, Venice Beach CA",
+      "heroSubheading": "Treat yourself to precision manicures, customized polygel extensions, and botanical foot therapies.",
+      "contactEmail": "info@vividnails.com"
+    },
+    {
+      "id": "b-3",
+      "contactPhone": "+1 (555) 777-6666",
+      "slug": "ink-master",
+      "createdAt": "2026-03-01T14:45:00Z",
+      "aboutText": "Ink & Steel is an advanced, sterile studio focusing on bespoke, story-led body art. Every piece is meticulously customized, respecting high-end sanitary norms and absolute artistic integrity.",
+      "theme": {
+        "fontFamily": "mono",
+        "buttonStyle": "square",
+        "primaryPalette": "retro-slate",
+        "bannerStyle": "overlay"
+      },
+      "name": "Ink & Steel Tattoo Studio",
+      "heroHeading": "Permanently Crafted Masterpieces",
+      "templateType": "tattoo-studio",
+      "logo": "🔥",
+      "contactAddress": "88 Industrial Alley, Brooklyn NY",
+      "isActive": true,
+      "seo": {
+        "metaDescription": "Premier Brooklyn custom tattoo consultations and sterile body art.",
+        "metaTitle": "Ink & Steel - Bespoke Linework & Illustrative Tattoos",
+        "ogImage": "ink_steel_preview"
+      },
+      "heroSubheading": "Fine-line, modern illustrative realism, and blackwork tattoos from accredited award-winning resident artists.",
+      "contactEmail": "artists@inksteel.com"
+    },
+    {
+      "id": "b-l3spurjbj",
+      "theme": {
+        "bannerStyle": "minimal",
+        "primaryPalette": "neutral",
+        "buttonStyle": "rounded",
+        "fontFamily": "sans"
+      },
+      "aboutText": "At Business1, we hold our craft with professional rigor, blending premium materials with experienced attention to detail.",
+      "createdAt": "2026-06-05T06:21:50.765Z",
+      "slug": "business1",
+      "contactPhone": "+1 (555) 019-2831",
+      "templateType": "hair-salon",
+      "logo": "💈",
+      "name": "Business1",
+      "heroHeading": "Premium Business1",
+      "isActive": true,
+      "seo": {
+        "metaTitle": "Business1 | Book Specialist Appointments",
+        "ogImage": "",
+        "metaDescription": "Schedule online services with Business1."
+      },
+      "contactAddress": "742 Evergreen Terrace, Springfield",
+      "heroSubheading": "Bespoke Hair & Barber customized precisely around you.",
+      "contactEmail": "villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "b-ly3vfofbf",
+      "isActive": true,
+      "seo": {
+        "metaDescription": "Schedule online services with Sample.",
+        "ogImage": "",
+        "metaTitle": "Sample | Book Specialist Appointments"
+      },
+      "contactAddress": "tibag baliuag bulacan",
+      "heroSubheading": "fkjsdbfkjsdbfkjsdbfksjbfksjbfds",
+      "contactEmail": "villagonzalomarkjames@gmail.com",
+      "categories": [
+        "Tattooing",
+        "Piercing",
+        "Consultation",
+        "Aftercare",
+        "General"
+      ],
+      "aboutText": "jbasdjabdjasbdaksjdbaskjbdaskjdbas",
+      "theme": {
+        "buttonStyle": "pill",
+        "fontFamily": "mono",
+        "bannerStyle": "split",
+        "primaryPalette": "amber",
+        "fontSizeSetting": "medium"
+      },
+      "contactPhone": "93928372711",
+      "createdAt": "2026-06-04T07:56:37.759Z",
+      "slug": "sample-test",
+      "templateType": "tattoo-studio",
+      "logo": "💅",
+      "name": "Sample",
+      "heroHeading": "jafnojnfkjsadbfkjdsbfksbfkjsdf"
+    }
+  ],
+  "services": [
+    {
+      "id": "s-101",
+      "description": "Seamless, hand-painted balayage lighting with full structural plex reconstruction. Includes wash, scalp massage, and blowout.",
+      "price": 185,
+      "duration": 150,
+      "staffIds": [
+        "st-1",
+        "st-2"
+      ],
+      "name": "Premium Balayage & Olaplex",
+      "businessId": "b-1",
+      "image": "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=300",
+      "category": "Coloring"
+    },
+    {
+      "id": "s-102",
+      "duration": 60,
+      "price": 85,
+      "description": "Artistic hair profile mapping, texturizing, structural style restoration, and hydration masks.",
+      "category": "Styling",
+      "image": "https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?auto=format&fit=crop&q=80&w=300",
+      "businessId": "b-1",
+      "staffIds": [
+        "st-1",
+        "st-2",
+        "st-3"
+      ],
+      "name": "Designer Cut & Customized Treatment"
+    },
+    {
+      "id": "s-103",
+      "price": 60,
+      "duration": 45,
+      "description": "Exfoliating wash, micro-steam hydration infusion, tea tree scalp cleanse, and essential oil sensory therapy.",
+      "staffIds": [
+        "st-2",
+        "st-3"
+      ],
+      "name": "Scalp Hydromassage & Botanical Restructure",
+      "category": "Therapy",
+      "businessId": "b-1",
+      "image": "https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&q=80&w=300"
+    },
+    {
+      "id": "s-201",
+      "description": "Nailbed structure analysis, tip extension, advanced sculpture, and custom fine-art hand painted graphics.",
+      "price": 120,
+      "duration": 90,
+      "businessId": "b-2",
+      "image": "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=300",
+      "category": "Artistry",
+      "name": "Bespoke Gel Painting & Hard Gel Full Set",
+      "staffIds": [
+        "st-4",
+        "st-5"
+      ]
+    },
+    {
+      "id": "s-202",
+      "businessId": "b-2",
+      "image": "https://images.unsplash.com/photo-1519415590266-606093cd53fc?auto=format&fit=crop&q=80&w=300",
+      "category": "Spa Care",
+      "staffIds": [
+        "st-5"
+      ],
+      "name": "Matcha Botanical Hand & Arm Spa",
+      "description": "Warm matcha herbal bath clean, Dead sea salt mineral scrub, paraffin moisture wax wrap, and rose oil massage.",
+      "price": 55,
+      "duration": 45
+    },
+    {
+      "id": "s-301",
+      "description": "One-on-one session with our master, visual mood boarding, reference mapping, sketching layout, and skin placement test.",
+      "price": 50,
+      "duration": 60,
+      "staffIds": [
+        "st-6",
+        "st-7"
+      ],
+      "name": "Custom Tattoo Conception Session",
+      "businessId": "b-3",
+      "image": "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&q=80&w=300",
+      "category": "Consultation"
+    },
+    {
+      "id": "s-302",
+      "duration": 120,
+      "price": 190,
+      "description": "Active tattooing of fine-line design, micro-realism portrait matching, or elegant modern lettering up to 4 inches. Includes bio-protection patch.",
+      "category": " tattooing",
+      "image": "https://images.unsplash.com/photo-1504198266287-1659872e6590?auto=format&fit=crop&q=80&w=300",
+      "businessId": "b-3",
+      "staffIds": [
+        "st-6",
+        "st-7"
+      ],
+      "name": "Fine Line Illustrative Session (Small/Medium)"
+    },
+    {
+      "id": "s-c9ic0n0qh",
+      "name": "kasas",
+      "staffIds": [],
+      "businessId": "b-ly3vfofbf",
+      "image": "https://pixabay.com/photos/new-year-background-tree-sunset-736885/",
+      "category": "Tattooing",
+      "description": "asdsadas",
+      "price": 20,
+      "variants": [
+        {
+          "id": "sv-0el3nbw",
+          "price": 20,
+          "duration": 60,
+          "description": "sda",
+          "name": "asda"
+        },
+        {
+          "duration": 60,
+          "price": 34,
+          "name": "adas",
+          "description": "dad",
+          "id": "sv-a3gemzr"
+        }
+      ],
+      "duration": 60,
+      "isActive": true
+    },
+    {
+      "id": "s-evpbbyr6a",
+      "description": "test",
+      "price": 50,
+      "duration": 45,
+      "isActive": true,
+      "name": "test1",
+      "staffIds": [],
+      "businessId": "b-ly3vfofbf",
+      "image": "",
+      "category": "Styling"
+    },
+    {
+      "id": "s-xj8gyi7qd",
+      "staffIds": [],
+      "name": "test2",
+      "category": "Styling",
+      "businessId": "b-ly3vfofbf",
+      "image": "",
+      "price": 50,
+      "duration": 45,
+      "description": "asdada"
+    }
+  ],
+  "staff": [
+    {
+      "id": "st-1",
+      "photo": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
+      "name": "Sarah Connor",
+      "rating": 4.9,
+      "workingHours": {
+        "end": "18:00",
+        "start": "09:00"
+      },
+      "position": "Master Colorist & Founder",
+      "businessId": "b-1"
+    },
+    {
+      "id": "st-2",
+      "businessId": "b-1",
+      "workingHours": {
+        "end": "19:00",
+        "start": "10:00"
+      },
+      "name": "David Johnson",
+      "rating": 4.8,
+      "position": "Senior Hair Designer",
+      "available": true,
+      "photo": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150"
+    },
+    {
+      "id": "st-3",
+      "name": "Isabel Carter",
+      "rating": 4.7,
+      "photo": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150",
+      "position": "Junior Therapist",
+      "businessId": "b-1",
+      "workingHours": {
+        "start": "09:00",
+        "end": "17:00"
+      }
+    },
+    {
+      "id": "st-4",
+      "available": true,
+      "position": "Lead Nail Designer",
+      "photo": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+      "workingHours": {
+        "end": "19:00",
+        "start": "10:00"
+      },
+      "businessId": "b-2",
+      "rating": 4.9,
+      "name": "Mila Kunis"
+    },
+    {
+      "id": "st-5",
+      "rating": 4.7,
+      "name": "Tiffany Vance",
+      "photo": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150",
+      "businessId": "b-2",
+      "position": "Botanical Aromatherapist",
+      "workingHours": {
+        "end": "18:00",
+        "start": "09:00"
+      }
+    },
+    {
+      "id": "st-6",
+      "workingHours": {
+        "end": "21:00",
+        "start": "12:00"
+      },
+      "position": "Custom Illustrative Specialist",
+      "businessId": "b-3",
+      "photo": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=150",
+      "rating": 4.95,
+      "name": "Marcus 'Steel' Vane"
+    },
+    {
+      "id": "st-7",
+      "photo": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=150",
+      "rating": 4.88,
+      "name": "Luna Blackwood",
+      "workingHours": {
+        "start": "11:00",
+        "end": "20:00"
+      },
+      "position": "Accredited Fine-line Resident",
+      "businessId": "b-3"
+    },
+    {
+      "id": "st-mchrs6f3k",
+      "workingHours": {
+        "end": "18:00",
+        "start": "09:00"
+      },
+      "businessId": "b-ly3vfofbf",
+      "name": "jay",
+      "rating": 5,
+      "position": "barber",
+      "available": true,
+      "photo": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150"
+    }
+  ],
+  "customers": [
+    {
+      "id": "c-1",
+      "businessId": "b-1",
+      "name": "Alex Mercer",
+      "lastAppointment": "2026-05-18",
+      "notes": "Enjoys warm chamomile tea, prefers cold air blower.",
+      "totalSpending": 540,
+      "tags": [
+        "VIP",
+        "High-Spender"
+      ],
+      "phone": "+1 (555) 303-1244",
+      "email": "alex.m@gmail.com"
+    },
+    {
+      "id": "c-18wxa35gn",
+      "notes": "Registered via customized Booking Site.",
+      "phone": "21312312",
+      "totalSpending": 50,
+      "tags": [
+        "New"
+      ],
+      "email": "markjames.villagonzalo06@gmail.com",
+      "businessId": "b-ly3vfofbf",
+      "name": "Villagonzalo",
+      "lastAppointment": "2026-06-15"
+    },
+    {
+      "id": "c-2",
+      "notes": "Warm, talks about botanical biology.",
+      "email": "sophia.mar@yahoo.com",
+      "tags": [
+        "Co-operative"
+      ],
+      "totalSpending": 255,
+      "phone": "+1 (555) 441-9233",
+      "businessId": "b-1",
+      "name": "Sophia Martinez",
+      "lastAppointment": "2026-05-22"
+    },
+    {
+      "id": "c-3",
+      "email": "gimme.more@pop.net",
+      "totalSpending": 360,
+      "tags": [
+        "Frequent"
+      ],
+      "phone": "+1 (555) 101-0909",
+      "notes": "Prefers extreme stiletto nails with heavy glitter.",
+      "lastAppointment": "2026-06-01",
+      "name": "Brittany Spears",
+      "businessId": "b-2"
+    },
+    {
+      "id": "c-4",
+      "email": "vince.t@industry.com",
+      "totalSpending": 240,
+      "tags": [
+        "New-Cover"
+      ],
+      "phone": "+1 (555) 888-9999",
+      "notes": "Getting half sleeve design mapping soon.",
+      "lastAppointment": "2026-06-03",
+      "name": "Vince Taylor",
+      "businessId": "b-3"
+    },
+    {
+      "id": "c-fwb5k40ex",
+      "email": "markjames.villagonzalo06@gmail.com",
+      "phone": "2134234",
+      "totalSpending": 120,
+      "tags": [
+        "New"
+      ],
+      "notes": "Registered via customized Booking Site.",
+      "lastAppointment": "2026-06-05",
+      "name": "Mark James Villagonzalo",
+      "businessId": "b-2"
+    },
+    {
+      "id": "c-fziult8oy",
+      "businessId": "b-ly3vfofbf",
+      "lastAppointment": "2026-06-05",
+      "name": "ASD",
+      "notes": "Registered via customized Booking Site.",
+      "email": "villagonzalomarkajmes21@gmail.com",
+      "phone": "234",
+      "tags": [
+        "New"
+      ],
+      "totalSpending": 90
+    },
+    {
+      "id": "c-ggukr6vgg",
+      "phone": "09388288112",
+      "totalSpending": 540,
+      "tags": [
+        "New"
+      ],
+      "email": "villagonzalomarkjames21@gmail.com",
+      "notes": "Registered via customized Booking Site.",
+      "lastAppointment": "2026-06-05",
+      "name": "ace",
+      "businessId": "b-1"
+    },
+    {
+      "id": "c-haz5rphwe",
+      "email": "villagonzalo21@gmail.com",
+      "phone": "2323",
+      "tags": [
+        "New"
+      ],
+      "totalSpending": 100,
+      "notes": "Registered via customized Booking Site.",
+      "name": "dasd",
+      "lastAppointment": "2026-06-05",
+      "businessId": "b-ly3vfofbf"
+    },
+    {
+      "id": "c-khol87uhn",
+      "businessId": "b-ly3vfofbf",
+      "name": "alice",
+      "lastAppointment": "2026-06-05",
+      "notes": "Registered via customized Booking Site.",
+      "phone": "09382711731",
+      "totalSpending": 450,
+      "tags": [
+        "New"
+      ],
+      "email": "villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "c-odls7p1gf",
+      "name": "Mark James Villagonzalo",
+      "lastAppointment": "2026-06-05",
+      "businessId": "b-2",
+      "tags": [
+        "New"
+      ],
+      "phone": "435345",
+      "totalSpending": 240,
+      "email": "villagonzalomarkjames21@gmail.com",
+      "notes": "Registered via customized Booking Site."
+    },
+    {
+      "id": "c-w5xp28wne",
+      "email": "maikaybiza0203@gmail.com",
+      "phone": "039488282811",
+      "tags": [
+        "New"
+      ],
+      "totalSpending": 0,
+      "notes": "Registered via customized Booking Site.",
+      "name": "maika",
+      "lastAppointment": "2026-06-11",
+      "businessId": "b-ly3vfofbf"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "bk-0ozso0i3w",
+      "serviceId": "s-201",
+      "paymentMethod": "cash",
+      "price": 120,
+      "date": "2026-06-05",
+      "notes": "asd",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "customerName": "james",
+      "businessId": "b-2",
+      "timeSlot": "03:00",
+      "createdAt": "2026-06-05T02:14:11.974Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "customerPhone": "3242342423",
+      "customerId": "c-odls7p1gf",
+      "staffId": "st-4",
+      "status": "confirmed"
+    },
+    {
+      "id": "bk-1",
+      "status": "confirmed",
+      "staffId": "st-1",
+      "customerPhone": "+1 (555) 303-1244",
+      "customerId": "c-1",
+      "timeSlot": "10:00",
+      "createdAt": "2026-05-28T14:22:00Z",
+      "customerName": "Alex Mercer",
+      "businessId": "b-1",
+      "date": "2026-06-01",
+      "customerEmail": "alex.m@gmail.com",
+      "serviceId": "s-101",
+      "price": 185
+    },
+    {
+      "id": "bk-105rbo1c3",
+      "status": "confirmed",
+      "staffId": "st-4",
+      "customerPhone": "435345",
+      "customerId": "c-odls7p1gf",
+      "timeSlot": "04:00",
+      "createdAt": "2026-06-04T15:20:54.219Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "customerName": "Mark James Villagonzalo",
+      "businessId": "b-2",
+      "date": "2026-06-04",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "",
+      "serviceId": "s-201",
+      "paymentMethod": "cash",
+      "price": 120
+    },
+    {
+      "id": "bk-1cnn701g3",
+      "paymentMethod": "cash",
+      "serviceId": "s-c9ic0n0qh",
+      "price": 20,
+      "date": "2026-06-05",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "gd",
+      "variantId": "sv-0el3nbw",
+      "customerName": "fsdffsfsdfsdfsdgdf",
+      "businessId": "b-ly3vfofbf",
+      "timeSlot": "08:00",
+      "createdAt": "2026-06-05T04:52:01.315Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "customerPhone": "+63 928 233 3281",
+      "customerId": "c-khol87uhn",
+      "staffId": "st-mchrs6f3k",
+      "variantName": "asda",
+      "status": "confirmed"
+    },
+    {
+      "id": "bk-2",
+      "notes": "Please keep length above shoulders!",
+      "customerEmail": "sophia.mar@yahoo.com",
+      "date": "2026-06-05",
+      "price": 85,
+      "serviceId": "s-102",
+      "businessId": "b-1",
+      "customerName": "Sophia Martinez",
+      "customerId": "c-2",
+      "customerPhone": "+1 (555) 441-9233",
+      "createdAt": "2026-06-01T09:12:00Z",
+      "timeSlot": "14:30",
+      "status": "confirmed",
+      "staffId": "st-2"
+    },
+    {
+      "id": "bk-21y4c93bx",
+      "customerName": "alice",
+      "businessId": "b-ly3vfofbf",
+      "paymentMethod": "cash",
+      "serviceId": "s-evpbbyr6a",
+      "price": 50,
+      "notes": "oil",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "date": "2026-06-05",
+      "staffId": "st-mchrs6f3k",
+      "cancellationRemarks": "sorry na",
+      "status": "cancelled",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "timeSlot": "04:00",
+      "createdAt": "2026-06-04T07:59:23.484Z",
+      "customerId": "c-khol87uhn",
+      "customerPhone": "09382711731"
+    },
+    {
+      "id": "bk-3",
+      "customerName": "Alex Mercer",
+      "businessId": "b-1",
+      "price": 60,
+      "serviceId": "s-103",
+      "customerEmail": "alex.m@gmail.com",
+      "date": "2026-06-08",
+      "staffId": "st-3",
+      "status": "confirmed",
+      "createdAt": "2026-06-02T15:10:00Z",
+      "timeSlot": "11:00",
+      "customerId": "c-1",
+      "customerPhone": "+1 (555) 303-1244"
+    },
+    {
+      "id": "bk-32dxpnjgd",
+      "timeSlot": "04:00",
+      "createdAt": "2026-06-05T02:15:06.548Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "customerPhone": "2134234",
+      "customerId": "c-fwb5k40ex",
+      "staffId": "st-4",
+      "status": "confirmed",
+      "serviceId": "s-201",
+      "paymentMethod": "cash",
+      "price": 120,
+      "date": "2026-06-05",
+      "customerEmail": "markjames.villagonzalo06@gmail.com",
+      "notes": "dewr",
+      "businessId": "b-2",
+      "customerName": "Mark James Villagonzalo"
+    },
+    {
+      "id": "bk-33qdqx5y2",
+      "status": "confirmed",
+      "staffId": "st-mchrs6f3k",
+      "customerPhone": "2323",
+      "customerId": "c-haz5rphwe",
+      "timeSlot": "03:00",
+      "createdAt": "2026-06-05T03:36:34.948Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "dasd",
+      "date": "2026-06-05",
+      "customerEmail": "villagonzalo21@gmail.com",
+      "notes": "wd",
+      "serviceId": "s-evpbbyr6a",
+      "paymentMethod": "cash",
+      "price": 50
+    },
+    {
+      "id": "bk-3cdkxcn7c",
+      "date": "2026-06-05",
+      "notes": "oil",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "price": 50,
+      "paymentMethod": "cash",
+      "serviceId": "s-evpbbyr6a",
+      "customerName": "alice",
+      "businessId": "b-ly3vfofbf",
+      "customerPhone": "09382711731",
+      "customerId": "c-khol87uhn",
+      "createdAt": "2026-06-04T07:59:23.638Z",
+      "timeSlot": "05:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "status": "cancelled",
+      "cancellationRemarks": "sorry",
+      "staffId": "st-mchrs6f3k"
+    },
+    {
+      "id": "bk-3ncm9ca9b",
+      "customerName": "Villagonzalo",
+      "businessId": "b-1",
+      "date": "2026-06-04",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "ewr",
+      "serviceId": "s-102",
+      "paymentMethod": "cash",
+      "price": 85,
+      "status": "confirmed",
+      "staffId": "st-1",
+      "customerPhone": "3423424234",
+      "customerId": "c-ggukr6vgg",
+      "timeSlot": "05:00",
+      "createdAt": "2026-06-04T15:22:22.733Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": ""
+    },
+    {
+      "id": "bk-4",
+      "timeSlot": "11:30",
+      "createdAt": "2026-06-02T10:45:00Z",
+      "customerPhone": "+1 (555) 101-0909",
+      "customerId": "c-3",
+      "staffId": "st-4",
+      "status": "confirmed",
+      "serviceId": "s-201",
+      "price": 120,
+      "date": "2026-06-06",
+      "customerEmail": "gimme.more@pop.net",
+      "businessId": "b-2",
+      "customerName": "Brittany Spears"
+    },
+    {
+      "id": "bk-5",
+      "serviceId": "s-301",
+      "price": 50,
+      "date": "2026-06-04",
+      "customerEmail": "vince.t@industry.com",
+      "businessId": "b-3",
+      "customerName": "Vince Taylor",
+      "timeSlot": "13:00",
+      "createdAt": "2026-06-03T09:00:00Z",
+      "customerPhone": "+1 (555) 888-9999",
+      "customerId": "c-4",
+      "staffId": "st-6",
+      "status": "confirmed"
+    },
+    {
+      "id": "bk-6",
+      "status": "confirmed",
+      "staffId": "st-7",
+      "customerId": "c-4",
+      "customerPhone": "+1 (555) 888-9999",
+      "timeSlot": "15:00",
+      "createdAt": "2026-06-03T17:15:00Z",
+      "businessId": "b-3",
+      "customerName": "Vince Taylor",
+      "customerEmail": "vince.t@industry.com",
+      "date": "2026-06-12",
+      "serviceId": "s-302",
+      "price": 190
+    },
+    {
+      "id": "bk-819br74rm",
+      "createdAt": "2026-06-05T03:32:13.277Z",
+      "timeSlot": "08:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "customerPhone": "234",
+      "customerId": "c-fziult8oy",
+      "staffId": "st-mchrs6f3k",
+      "status": "cancelled",
+      "cancellationRemarks": "sa",
+      "price": 50,
+      "serviceId": "s-evpbbyr6a",
+      "paymentMethod": "cash",
+      "date": "2026-06-05",
+      "notes": "ad",
+      "customerEmail": "villagonzalomarkajmes21@gmail.com",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "ASD"
+    },
+    {
+      "id": "bk-bb3lrx0ti",
+      "customerId": "c-fziult8oy",
+      "customerPhone": "234",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "createdAt": "2026-06-05T03:32:16.591Z",
+      "timeSlot": "09:00",
+      "status": "confirmed",
+      "staffId": "st-mchrs6f3k",
+      "customerEmail": "villagonzalomarkajmes21@gmail.com",
+      "notes": "ad",
+      "date": "2026-06-05",
+      "price": 50,
+      "paymentMethod": "cash",
+      "serviceId": "s-evpbbyr6a",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "ASD"
+    },
+    {
+      "id": "bk-c4f5i9t4z",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "sample",
+      "variantId": "sv-0el3nbw",
+      "price": 20,
+      "serviceId": "s-c9ic0n0qh",
+      "paymentMethod": "cash",
+      "date": "2026-06-05",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "ada",
+      "staffId": "st-mchrs6f3k",
+      "variantName": "asda",
+      "status": "pending",
+      "createdAt": "2026-06-05T06:18:42.760Z",
+      "timeSlot": "14:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "customerPhone": "+63 093 273 2747",
+      "customerId": "c-khol87uhn"
+    },
+    {
+      "id": "bk-cop1q4dul",
+      "createdAt": "2026-06-05T04:20:03.314Z",
+      "timeSlot": "12:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "customerPhone": "324234",
+      "customerId": "c-khol87uhn",
+      "staffId": "st-mchrs6f3k",
+      "variantName": "asda",
+      "status": "confirmed",
+      "price": 20,
+      "paymentMethod": "cash",
+      "serviceId": "s-c9ic0n0qh",
+      "date": "2026-06-05",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "423432",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "sdfsf",
+      "variantId": "sv-0el3nbw"
+    },
+    {
+      "id": "bk-eo4pvl38q",
+      "businessId": "b-1",
+      "customerName": "ace",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "allergy",
+      "date": "2026-06-04",
+      "price": 185,
+      "serviceId": "s-101",
+      "paymentMethod": "cash",
+      "status": "confirmed",
+      "staffId": "st-1",
+      "customerId": "c-ggukr6vgg",
+      "customerPhone": "09388288112",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "createdAt": "2026-06-04T15:17:02.176Z",
+      "timeSlot": "04:00"
+    },
+    {
+      "id": "bk-fajt9ihb3",
+      "customerPhone": "+63 093 273 2747",
+      "customerId": "c-khol87uhn",
+      "createdAt": "2026-06-05T06:18:38.695Z",
+      "timeSlot": "13:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "status": "confirmed",
+      "staffId": "st-mchrs6f3k",
+      "variantName": "asda",
+      "date": "2026-06-05",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "ada",
+      "price": 20,
+      "paymentMethod": "cash",
+      "serviceId": "s-c9ic0n0qh",
+      "customerName": "sample",
+      "variantId": "sv-0el3nbw",
+      "businessId": "b-ly3vfofbf"
+    },
+    {
+      "id": "bk-flv1oh5c8",
+      "variantName": "asda",
+      "staffId": "st-mchrs6f3k",
+      "status": "confirmed",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "timeSlot": "11:00",
+      "createdAt": "2026-06-05T04:19:58.954Z",
+      "customerId": "c-khol87uhn",
+      "customerPhone": "324234",
+      "customerName": "sdfsf",
+      "variantId": "sv-0el3nbw",
+      "businessId": "b-ly3vfofbf",
+      "paymentMethod": "cash",
+      "serviceId": "s-c9ic0n0qh",
+      "price": 20,
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "423432",
+      "date": "2026-06-05"
+    },
+    {
+      "id": "bk-g43wvetca",
+      "businessId": "b-1",
+      "customerName": "Mark James Villagonzalo",
+      "date": "2026-06-05",
+      "notes": "as",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "price": 185,
+      "paymentMethod": "cash",
+      "serviceId": "s-101",
+      "status": "confirmed",
+      "staffId": "st-1",
+      "customerPhone": "2312312321312",
+      "customerId": "c-ggukr6vgg",
+      "createdAt": "2026-06-04T16:11:26.643Z",
+      "timeSlot": "04:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0
+    },
+    {
+      "id": "bk-gks79xpjy",
+      "businessId": "b-ly3vfofbf",
+      "variantId": "sv-0el3nbw",
+      "customerName": "ADASD",
+      "date": "2026-06-05",
+      "customerEmail": "villagonzalomarkajmes21@gmail.com",
+      "notes": "asdsad",
+      "serviceId": "s-c9ic0n0qh",
+      "paymentMethod": "cash",
+      "price": 20,
+      "status": "confirmed",
+      "staffId": "st-mchrs6f3k",
+      "variantName": "asda",
+      "customerPhone": "2342343",
+      "customerId": "c-fziult8oy",
+      "timeSlot": "05:00",
+      "createdAt": "2026-06-05T04:19:00.848Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": ""
+    },
+    {
+      "id": "bk-hl9onfiup",
+      "variantName": "asda",
+      "staffId": "st-mchrs6f3k",
+      "status": "confirmed",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "timeSlot": "04:00",
+      "createdAt": "2026-06-05T04:18:55.171Z",
+      "customerId": "c-fziult8oy",
+      "customerPhone": "2342343",
+      "businessId": "b-ly3vfofbf",
+      "variantId": "sv-0el3nbw",
+      "customerName": "ADASD",
+      "serviceId": "s-c9ic0n0qh",
+      "paymentMethod": "cash",
+      "price": 20,
+      "customerEmail": "villagonzalomarkajmes21@gmail.com",
+      "notes": "asdsad",
+      "date": "2026-06-05"
+    },
+    {
+      "id": "bk-iy0mrj2tm",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "jay",
+      "price": 50,
+      "paymentMethod": "cash",
+      "serviceId": "s-evpbbyr6a",
+      "notes": "sre",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "date": "2026-06-05",
+      "staffId": "st-mchrs6f3k",
+      "status": "confirmed",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "createdAt": "2026-06-05T03:23:22.862Z",
+      "timeSlot": "06:00",
+      "customerId": "c-khol87uhn",
+      "customerPhone": "213123"
+    },
+    {
+      "id": "bk-jh7ek7agc",
+      "staffId": "st-mchrs6f3k",
+      "variantName": "asda",
+      "status": "confirmed",
+      "timeSlot": "07:00",
+      "createdAt": "2026-06-05T04:44:49.159Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "customerPhone": "0983204234432",
+      "customerId": "c-khol87uhn",
+      "customerName": "fsdfs",
+      "variantId": "sv-0el3nbw",
+      "businessId": "b-ly3vfofbf",
+      "paymentMethod": "cash",
+      "serviceId": "s-c9ic0n0qh",
+      "price": 20,
+      "date": "2026-06-05",
+      "notes": "adas",
+      "customerEmail": "villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "bk-k5jzvo9f3",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "dasd",
+      "notes": "wd",
+      "customerEmail": "villagonzalo21@gmail.com",
+      "date": "2026-06-05",
+      "serviceId": "s-evpbbyr6a",
+      "paymentMethod": "cash",
+      "price": 50,
+      "status": "confirmed",
+      "staffId": "st-mchrs6f3k",
+      "customerId": "c-haz5rphwe",
+      "customerPhone": "2323",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "timeSlot": "10:00",
+      "createdAt": "2026-06-05T03:36:32.004Z"
+    },
+    {
+      "id": "bk-koan20or3",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "createdAt": "2026-06-04T08:12:15.829Z",
+      "timeSlot": "05:00",
+      "customerId": "c-w5xp28wne",
+      "customerPhone": "039488282811",
+      "staffId": "st-mchrs6f3k",
+      "status": "cancelled",
+      "cancellationRemarks": "sorry",
+      "price": 50,
+      "serviceId": "s-xj8gyi7qd",
+      "paymentMethod": "cash",
+      "notes": "solid",
+      "customerEmail": "maikaybiza0203@gmail.com",
+      "date": "2026-06-11",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "maika"
+    },
+    {
+      "id": "bk-mksgc1p74",
+      "staffId": "st-mchrs6f3k",
+      "status": "confirmed",
+      "timeSlot": "05:00",
+      "createdAt": "2026-06-04T16:13:29.763Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "customerPhone": "21312312",
+      "customerId": "c-18wxa35gn",
+      "customerName": "Villagonzalo",
+      "businessId": "b-ly3vfofbf",
+      "paymentMethod": "cash",
+      "serviceId": "s-evpbbyr6a",
+      "price": 50,
+      "date": "2026-06-15",
+      "notes": "asd",
+      "customerEmail": "markjames.villagonzalo06@gmail.com"
+    },
+    {
+      "id": "bk-ocplo9t0a",
+      "customerId": "c-w5xp28wne",
+      "customerPhone": "039488282811",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "createdAt": "2026-06-04T08:12:15.687Z",
+      "timeSlot": "04:00",
+      "status": "cancelled",
+      "cancellationRemarks": "sorry",
+      "staffId": "st-mchrs6f3k",
+      "customerEmail": "maikaybiza0203@gmail.com",
+      "notes": "solid",
+      "date": "2026-06-11",
+      "price": 50,
+      "serviceId": "s-xj8gyi7qd",
+      "paymentMethod": "cash",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "maika"
+    },
+    {
+      "id": "bk-owx587kbf",
+      "customerId": "c-khol87uhn",
+      "customerPhone": "0956533422",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "createdAt": "2026-06-04T08:43:10.116Z",
+      "timeSlot": "11:00",
+      "status": "cancelled",
+      "cancellationRemarks": "test",
+      "staffId": "st-mchrs6f3k",
+      "notes": "ere",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "date": "2026-06-04",
+      "price": 50,
+      "paymentMethod": "cash",
+      "serviceId": "s-evpbbyr6a",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "han"
+    },
+    {
+      "id": "bk-qvk37ktip",
+      "timeSlot": "07:00",
+      "createdAt": "2026-06-05T03:23:22.887Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "customerPhone": "213123",
+      "customerId": "c-khol87uhn",
+      "staffId": "st-mchrs6f3k",
+      "cancellationRemarks": "sdas",
+      "status": "cancelled",
+      "serviceId": "s-evpbbyr6a",
+      "paymentMethod": "cash",
+      "price": 50,
+      "date": "2026-06-05",
+      "notes": "sre",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "customerName": "jay",
+      "businessId": "b-ly3vfofbf"
+    },
+    {
+      "id": "bk-rqqcsgwas",
+      "customerPhone": "23423432",
+      "customerId": "c-khol87uhn",
+      "timeSlot": "05:00",
+      "createdAt": "2026-06-05T02:49:37.210Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "status": "confirmed",
+      "staffId": "st-mchrs6f3k",
+      "date": "2026-06-06",
+      "notes": "sfs",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "paymentMethod": "cash",
+      "serviceId": "s-evpbbyr6a",
+      "price": 50,
+      "businessId": "b-ly3vfofbf",
+      "customerName": "Mark James Villagonzalo"
+    },
+    {
+      "id": "bk-sgm6dgo34",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "ere",
+      "date": "2026-06-04",
+      "serviceId": "s-evpbbyr6a",
+      "paymentMethod": "cash",
+      "price": 50,
+      "customerName": "han",
+      "businessId": "b-ly3vfofbf",
+      "customerId": "c-khol87uhn",
+      "customerPhone": "0956533422",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "timeSlot": "10:00",
+      "createdAt": "2026-06-04T08:43:10.209Z",
+      "status": "confirmed",
+      "staffId": "st-mchrs6f3k"
+    },
+    {
+      "id": "bk-stxggh5d1",
+      "customerName": "Mark James Villagonzalo",
+      "businessId": "b-ly3vfofbf",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "sfs",
+      "date": "2026-06-06",
+      "price": 50,
+      "serviceId": "s-evpbbyr6a",
+      "paymentMethod": "cash",
+      "status": "confirmed",
+      "staffId": "st-mchrs6f3k",
+      "customerId": "c-khol87uhn",
+      "customerPhone": "23423432",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "createdAt": "2026-06-05T02:49:37.317Z",
+      "timeSlot": "03:00"
+    },
+    {
+      "id": "bk-u707th7n1",
+      "staffId": "st-mchrs6f3k",
+      "status": "confirmed",
+      "createdAt": "2026-06-04T08:43:09.887Z",
+      "timeSlot": "05:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "customerPhone": "0956533422",
+      "customerId": "c-khol87uhn",
+      "customerName": "han",
+      "businessId": "b-ly3vfofbf",
+      "price": 50,
+      "paymentMethod": "cash",
+      "serviceId": "s-evpbbyr6a",
+      "date": "2026-06-04",
+      "notes": "ere",
+      "customerEmail": "villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "bk-u78binzh9",
+      "price": 50,
+      "serviceId": "s-evpbbyr6a",
+      "paymentMethod": "cash",
+      "date": "2026-06-06",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "notes": "sfs",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "Mark James Villagonzalo",
+      "createdAt": "2026-06-05T02:49:37.063Z",
+      "timeSlot": "04:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "customerPhone": "23423432",
+      "customerId": "c-khol87uhn",
+      "staffId": "st-mchrs6f3k",
+      "status": "confirmed"
+    },
+    {
+      "id": "bk-ve9kqlu83",
+      "createdAt": "2026-06-04T08:43:10.009Z",
+      "timeSlot": "06:00",
+      "gcashTxnRef": "",
+      "downpaymentPaid": 0,
+      "customerPhone": "0956533422",
+      "customerId": "c-khol87uhn",
+      "staffId": "st-mchrs6f3k",
+      "status": "confirmed",
+      "price": 50,
+      "serviceId": "s-evpbbyr6a",
+      "paymentMethod": "cash",
+      "date": "2026-06-04",
+      "notes": "ere",
+      "customerEmail": "villagonzalomarkjames21@gmail.com",
+      "businessId": "b-ly3vfofbf",
+      "customerName": "han"
+    },
+    {
+      "id": "bk-vitqbp5ql",
+      "staffId": "st-1",
+      "status": "confirmed",
+      "timeSlot": "06:00",
+      "createdAt": "2026-06-04T15:24:18.668Z",
+      "downpaymentPaid": 0,
+      "gcashTxnRef": "",
+      "customerPhone": "3534535334",
+      "customerId": "c-ggukr6vgg",
+      "businessId": "b-1",
+      "customerName": "Villagonzalo",
+      "serviceId": "s-102",
+      "paymentMethod": "cash",
+      "price": 85,
+      "date": "2026-06-04",
+      "notes": "fdsf",
+      "customerEmail": "villagonzalomarkjames21@gmail.com"
+    }
+  ],
+  "reviews": [],
+  "blogs": [],
+  "faqs": [
+    {
+      "id": "fq-86mdxx26q",
+      "businessId": "b-l3spurjbj",
+      "question": "Do I need to book in advance?",
+      "answer": "We strongly recommend booking through our custom CMS site to guarantee your preferred time slot!"
+    },
+    {
+      "id": "fq-xaohe78nl",
+      "question": "Do I need to book in advance?",
+      "answer": "We strongly recommend booking through our custom CMS site to guarantee your preferred time slot!",
+      "businessId": "b-ly3vfofbf"
+    }
+  ],
+  "emailTemplates": [
+    {
+      "id": "b-l3spurjbj-booking_confirmation",
+      "body": "Hi {{customerName}},\n\nYour appointment for {{serviceName}} is confirmed for {{bookingDate}} at {{bookingTime}} with {{staffName}}.\n\nWe look forward to seeing you at 742 Evergreen Terrace, Springfield!\n\nBest regards,\nBusiness1 Team",
+      "businessId": "b-l3spurjbj",
+      "subject": "Your Booking at Business1 is Confirmed!",
+      "key": "booking_confirmation"
+    },
+    {
+      "id": "b-ly3vfofbf-booking_confirmation",
+      "key": "booking_confirmation",
+      "businessId": "b-ly3vfofbf",
+      "subject": "Your Booking at Sample is Confirmed!",
+      "body": "Hi {{customerName}},\n\nYour appointment for {{serviceName}} is confirmed for {{bookingDate}} at {{bookingTime}} with {{staffName}}.\n\nWe look forward to seeing you at tibag baliuag bulacan!\n\nBest regards,\nSample Team"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log-079zzr2oz",
+      "createdAt": "2026-06-04T15:20:59.002Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGX2otyfEwQ9mPBAAAAA5V9S5PVZhs1.dB5Ou1-UqY"
+    },
+    {
+      "id": "log-0865unymw",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGYPItyfEwQ9mT5AAAABsMjt7QT8MfJTYZjqCZxYLI",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-04T15:22:37.283Z"
+    },
+    {
+      "id": "log-0b1513308",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "details": "Booking #bk-2 status changed from pending to confirmed",
+      "createdAt": "2026-06-04T09:11:58.722Z"
+    },
+    {
+      "id": "log-0ifigtmk9",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGYMfsdSb1TX5n3AAAABXabZKBvNncazK9IV9bdkak",
+      "createdAt": "2026-06-04T15:22:26.250Z"
+    },
+    {
+      "id": "log-0td689b8l",
+      "createdAt": "2026-06-05T02:50:37.173Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-19bkvv794",
+      "createdAt": "2026-06-05T04:20:03.300Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com",
+      "action": "SEND_EMAIL",
+      "actor": "Email System"
+    },
+    {
+      "id": "log-1gkjacqih",
+      "createdAt": "2026-06-05T02:49:37.064Z",
+      "details": "Created pending booking #bk-u78binzh9 for Mark James Villagonzalo",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING"
+    },
+    {
+      "id": "log-1j0ciugjw",
+      "createdAt": "2026-06-04T08:41:18.348Z",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent appointment cancellation email to maikaybiza0203@gmail.com. Reason: sorry"
+    },
+    {
+      "id": "log-1u5alfhp9",
+      "action": "CREATE_SERVICE",
+      "actor": "Business Console",
+      "details": "Created service details for \"test1\" ($50)",
+      "createdAt": "2026-06-04T07:57:38.262Z"
+    },
+    {
+      "id": "log-1zj69or1l",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-vitqbp5ql for Villagonzalo",
+      "createdAt": "2026-06-04T15:24:18.668Z"
+    },
+    {
+      "id": "log-2d8t6mpo6",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "createdAt": "2026-06-05T06:20:39.438Z"
+    },
+    {
+      "id": "log-2o3bahgkv",
+      "createdAt": "2026-06-05T03:36:34.948Z",
+      "details": "Created pending booking #bk-33qdqx5y2 for dasd",
+      "action": "CREATE_BOOKING",
+      "actor": "Booking Engine"
+    },
+    {
+      "id": "log-2vxn3l5l5",
+      "createdAt": "2026-06-05T03:36:32.004Z",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-k5jzvo9f3 for dasd"
+    },
+    {
+      "id": "log-3g1gqvkby",
+      "createdAt": "2026-06-04T08:48:28.396Z",
+      "details": "Booking #bk-owx587kbf status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-3ig9oxgcf",
+      "action": "UPDATE_CMS_THEME",
+      "actor": "CMS Website Builder",
+      "details": "Updated CMS presentation, layout and details for Sample",
+      "createdAt": "2026-06-04T08:51:44.594Z"
+    },
+    {
+      "id": "log-3o8ff3yu5",
+      "createdAt": "2026-06-04T09:13:06.318Z",
+      "action": "UPDATE_CMS_THEME",
+      "actor": "CMS Website Builder",
+      "details": "Updated CMS presentation, layout and details for Chic Cuts Hair Salon"
+    },
+    {
+      "id": "log-3vpy6jy28",
+      "createdAt": "2026-06-04T09:12:00.932Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to sophia.mar@yahoo.com"
+    },
+    {
+      "id": "log-4ltuw3pn3",
+      "createdAt": "2026-06-04T07:59:23.639Z",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-3cdkxcn7c for alice"
+    },
+    {
+      "id": "log-4qoc539p0",
+      "details": "Booking #bk-sgm6dgo34 status changed from pending to confirmed",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "createdAt": "2026-06-04T08:48:27.920Z"
+    },
+    {
+      "id": "log-4zyvad7jf",
+      "createdAt": "2026-06-05T03:36:34.941Z",
+      "details": "Sent booking pending notice email to villagonzalo21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJEQuh.E5oJ1gbgAAAAB4jGXAijNWUOmwiv7DRBRVc",
+      "action": "SEND_EMAIL",
+      "actor": "Email System"
+    },
+    {
+      "id": "log-51fb5qd9s",
+      "details": "Created pending booking #bk-owx587kbf for han",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "createdAt": "2026-06-04T08:43:10.116Z"
+    },
+    {
+      "id": "log-5bznlcz7q",
+      "createdAt": "2026-06-05T06:18:42.760Z",
+      "details": "Created pending booking #bk-c4f5i9t4z for sample",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING"
+    },
+    {
+      "id": "log-5g4rmpvlb",
+      "createdAt": "2026-06-05T06:03:33.725Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-5gf9xvrxx",
+      "createdAt": "2026-06-05T04:22:56.235Z",
+      "details": "Booking #bk-819br74rm status changed from confirmed to cancelled (Remarks: sa)",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-5l6ybfx1p",
+      "createdAt": "2026-06-05T03:23:22.887Z",
+      "details": "Created pending booking #bk-qvk37ktip for jay",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING"
+    },
+    {
+      "id": "log-5lawgpi2k",
+      "createdAt": "2026-06-05T04:44:54.051Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-5ykej75mw",
+      "createdAt": "2026-06-05T04:52:06.496Z",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-60tr27xsv",
+      "createdAt": "2026-06-05T03:44:35.328Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to villagonzalo21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJGI0aRd.PIr4kcAAAACr8ZAsxeuX0qVH7fXHh0Hp4"
+    },
+    {
+      "id": "log-669mx7nig",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "details": "Booking #bk-21y4c93bx status changed from pending to confirmed",
+      "createdAt": "2026-06-04T08:14:47.623Z"
+    },
+    {
+      "id": "log-6fw6ehijx",
+      "details": "Booking #bk-qvk37ktip status changed from confirmed to cancelled (Remarks: sdas)",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-05T04:23:23.174Z"
+    },
+    {
+      "id": "log-6m007pjm8",
+      "details": "Created pending booking #bk-ve9kqlu83 for han",
+      "action": "CREATE_BOOKING",
+      "actor": "Booking Engine",
+      "createdAt": "2026-06-04T08:43:10.009Z"
+    },
+    {
+      "id": "log-6nrhxbqv4",
+      "createdAt": "2026-06-04T08:48:28.751Z",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-ve9kqlu83 status changed from pending to confirmed"
+    },
+    {
+      "id": "log-83qvzhuw5",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "createdAt": "2026-06-05T02:50:34.119Z"
+    },
+    {
+      "id": "log-9181qc20a",
+      "createdAt": "2026-06-04T08:43:13.836Z",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-92bedwq2r",
+      "createdAt": "2026-06-04T15:24:56.572Z",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGYx-h.E5oJ1DgyAAAACkoJanOydd0WQRJSjdHBGRg",
+      "action": "SEND_EMAIL",
+      "actor": "Email System"
+    },
+    {
+      "id": "log-92mwud8eh",
+      "createdAt": "2026-06-04T08:40:47.903Z",
+      "details": "Booking #bk-3cdkxcn7c status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-98cdrrx2v",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-rqqcsgwas for Mark James Villagonzalo",
+      "createdAt": "2026-06-05T02:49:37.211Z"
+    },
+    {
+      "id": "log-9jfdem0vo",
+      "createdAt": "2026-06-05T03:32:13.277Z",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-819br74rm for ASD"
+    },
+    {
+      "id": "log-9t23ppobc",
+      "createdAt": "2026-06-05T03:47:23.036Z",
+      "details": "Sent appointment cancellation email to villagonzalomarkjames21@gmail.com. Reason: sorry na",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-abeycsggv",
+      "createdAt": "2026-06-04T08:43:10.209Z",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-sgm6dgo34 for han"
+    },
+    {
+      "id": "log-apgygmlim",
+      "createdAt": "2026-06-04T08:15:57.716Z",
+      "details": "Sent appointment cancellation email to maikaybiza0203@gmail.com. Reason: sorry",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-axje1x5zn",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-04T08:43:13.539Z"
+    },
+    {
+      "id": "log-b6j43tzh8",
+      "createdAt": "2026-06-04T08:43:09.888Z",
+      "action": "CREATE_BOOKING",
+      "actor": "Booking Engine",
+      "details": "Created pending booking #bk-u707th7n1 for han"
+    },
+    {
+      "id": "log-b91h4g6z2",
+      "createdAt": "2026-06-04T09:13:08.993Z",
+      "actor": "CMS Website Builder",
+      "action": "UPDATE_CMS_THEME",
+      "details": "Updated CMS presentation, layout and details for Chic Cuts Hair Salon"
+    },
+    {
+      "id": "log-b9bq81at9",
+      "createdAt": "2026-06-04T08:15:00.689Z",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "details": "Booking #bk-koan20or3 status changed from pending to confirmed"
+    },
+    {
+      "id": "log-baquhen1x",
+      "createdAt": "2026-06-05T02:49:40.364Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-c3qlyurda",
+      "createdAt": "2026-06-04T08:15:55.084Z",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-koan20or3 status changed from confirmed to cancelled (Remarks: sorry)"
+    },
+    {
+      "id": "log-c5kcvurlh",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "details": "Booking #bk-jh7ek7agc status changed from pending to confirmed",
+      "createdAt": "2026-06-05T06:03:28.608Z"
+    },
+    {
+      "id": "log-chk29zdx7",
+      "actor": "Business Console",
+      "action": "CREATE_SERVICE",
+      "details": "Created service details for \"test2\" ($50)",
+      "createdAt": "2026-06-04T07:57:46.340Z"
+    },
+    {
+      "id": "log-cuj3wq5rp",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-ocplo9t0a for maika",
+      "createdAt": "2026-06-04T08:12:15.687Z"
+    },
+    {
+      "id": "log-cvo22fyho",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent appointment cancellation email to villagonzalomarkjames21@gmail.com. Reason: sdas",
+      "createdAt": "2026-06-05T04:23:28.579Z"
+    },
+    {
+      "id": "log-czx6fllma",
+      "createdAt": "2026-06-05T03:32:19.842Z",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent booking pending notice email to villagonzalomarkajmes21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJDQ-h.E5oJ1gTOAAAAA.COcSmH2EeoLR0XafLjq.c"
+    },
+    {
+      "id": "log-dbwdaanz5",
+      "createdAt": "2026-06-05T04:20:08.494Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-dgkpzfaep",
+      "createdAt": "2026-06-05T02:50:34.421Z",
+      "details": "Booking #bk-stxggh5d1 status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-dmk1a54vt",
+      "createdAt": "2026-06-05T04:21:00.249Z",
+      "details": "Booking #bk-gks79xpjy status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-e2b38gdsr",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGYZPsdSb1TX5qfAAAACLb4pV-CmZ5c3IRJgjMyPl8",
+      "createdAt": "2026-06-04T15:23:17.055Z"
+    },
+    {
+      "id": "log-e3hu7pe55",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "details": "Booking #bk-iy0mrj2tm status changed from pending to confirmed",
+      "createdAt": "2026-06-05T03:31:33.333Z"
+    },
+    {
+      "id": "log-ejevx2zx5",
+      "createdAt": "2026-06-05T03:46:40.782Z",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-32dxpnjgd status changed from pending to confirmed"
+    },
+    {
+      "id": "log-f2sdzya0r",
+      "createdAt": "2026-06-05T03:33:06.644Z",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-819br74rm status changed from pending to confirmed"
+    },
+    {
+      "id": "log-f6psac3jv",
+      "createdAt": "2026-06-05T04:03:55.303Z",
+      "details": "Sent appointment cancellation email to villagonzalomarkjames21@gmail.com. Reason: sorry",
+      "action": "SEND_EMAIL",
+      "actor": "Email System"
+    },
+    {
+      "id": "log-ffbs8rpa3",
+      "createdAt": "2026-06-04T16:11:26.643Z",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-g43wvetca for Mark James Villagonzalo"
+    },
+    {
+      "id": "log-fifvhsn9u",
+      "createdAt": "2026-06-05T03:46:46.275Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to markjames.villagonzalo06@gmail.com"
+    },
+    {
+      "id": "log-g5re01us0",
+      "details": "Created pending booking #bk-cop1q4dul for sdfsf",
+      "action": "CREATE_BOOKING",
+      "actor": "Booking Engine",
+      "createdAt": "2026-06-05T04:20:03.314Z"
+    },
+    {
+      "id": "log-gfqrtxlvj",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-3ncm9ca9b status changed from pending to confirmed",
+      "createdAt": "2026-06-04T15:22:32.349Z"
+    },
+    {
+      "id": "log-gtass8j7k",
+      "details": "Booking #bk-0ozso0i3w status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-05T03:22:11.906Z"
+    },
+    {
+      "id": "log-gv85om5hj",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-eo4pvl38q for ace",
+      "createdAt": "2026-06-04T15:17:02.176Z"
+    },
+    {
+      "id": "log-gv9cy0nnl",
+      "details": "Booking #bk-33qdqx5y2 status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-05T03:44:31.755Z"
+    },
+    {
+      "id": "log-h0bgqbwbt",
+      "createdAt": "2026-06-05T02:07:47.764Z",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-h18t0qg67",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-32dxpnjgd for Mark James Villagonzalo",
+      "createdAt": "2026-06-05T02:15:06.548Z"
+    },
+    {
+      "id": "log-h8cuqt9nj",
+      "createdAt": "2026-06-05T02:49:39.398Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com",
+      "action": "SEND_EMAIL",
+      "actor": "Email System"
+    },
+    {
+      "id": "log-hg719jufq",
+      "details": "Sent booking confirmation email to villagonzalomarkajmes21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJDdUaRd.PIr4UrAAAABD3-yeD-4IMHbxUoD7ef3pQ",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "createdAt": "2026-06-05T03:33:09.978Z"
+    },
+    {
+      "id": "log-hnai0x7wy",
+      "details": "Booking #bk-k5jzvo9f3 status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-05T03:40:48.264Z"
+    },
+    {
+      "id": "log-hssj3gdnp",
+      "createdAt": "2026-06-05T03:23:26.084Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiJA5ArZs4RPgQlQaiJBLvsdSb1TYV9LAAAAAlRHDzAuriP0qnTWrmkDTmQ",
+      "action": "SEND_EMAIL",
+      "actor": "Email System"
+    },
+    {
+      "id": "log-i0slxm4ca",
+      "details": "Created pending booking #bk-iy0mrj2tm for jay",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "createdAt": "2026-06-05T03:23:22.862Z"
+    },
+    {
+      "id": "log-iblnh7br9",
+      "createdAt": "2026-06-05T02:49:39.921Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-igg6r8cy6",
+      "createdAt": "2026-06-04T08:43:14.275Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-ijnt2yoog",
+      "createdAt": "2026-06-05T04:03:19.287Z",
+      "action": "UPDATE_CMS_THEME",
+      "actor": "CMS Website Builder",
+      "details": "Updated CMS presentation, layout and details for Sample"
+    },
+    {
+      "id": "log-imxihac3j",
+      "actor": "CMS Website Builder",
+      "action": "UPDATE_CMS_THEME",
+      "details": "Updated CMS presentation, layout and details for Chic Cuts Hair Salon",
+      "createdAt": "2026-06-04T09:13:11.534Z"
+    },
+    {
+      "id": "log-irl2r657k",
+      "createdAt": "2026-06-05T06:21:50.767Z",
+      "details": "Successfully onboarded and provisioned tenant Business1 (business1)",
+      "actor": "SaaS Onboarding Manager",
+      "action": "CREATE_TENANT"
+    },
+    {
+      "id": "log-isl5474r9",
+      "details": "Booking #bk-flv1oh5c8 status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-05T04:21:28.058Z"
+    },
+    {
+      "id": "log-it71iuyga",
+      "details": "Created pending booking #bk-3ncm9ca9b for Villagonzalo",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "createdAt": "2026-06-04T15:22:22.733Z"
+    },
+    {
+      "id": "log-iwrzo2rdc",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkajmes21@gmail.com",
+      "createdAt": "2026-06-05T04:19:05.647Z"
+    },
+    {
+      "id": "log-jg9zezasq",
+      "createdAt": "2026-06-05T04:19:00.848Z",
+      "details": "Created pending booking #bk-gks79xpjy for ADASD",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING"
+    },
+    {
+      "id": "log-jgouut911",
+      "createdAt": "2026-06-05T06:18:47.039Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-jqqjt3kjy",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiJA5ArZs4RPgQlQaiJBLotyfEwQ-Cp0AAAAAzsJKSSG0C9loVU7IFt8bJk",
+      "createdAt": "2026-06-05T03:23:26.223Z"
+    },
+    {
+      "id": "log-jreourq4n",
+      "details": "Booking #bk-105rbo1c3 status changed from pending to confirmed",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "createdAt": "2026-06-04T15:21:39.797Z"
+    },
+    {
+      "id": "log-jti2gwbqg",
+      "createdAt": "2026-06-05T03:47:17.710Z",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "details": "Booking #bk-21y4c93bx status changed from confirmed to cancelled (Remarks: sorry na)"
+    },
+    {
+      "id": "log-jznhqzwwz",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-21y4c93bx for alice",
+      "createdAt": "2026-06-04T07:59:23.484Z"
+    },
+    {
+      "id": "log-k50edzskn",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiJA5ArZs4RPgQlQaiJBS0aRd.PIr3.UAAAABGu-bTzc9JxnnqYAz1KKzgw",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-05T03:23:56.034Z"
+    },
+    {
+      "id": "log-k91tjm29j",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-04T08:40:50.580Z"
+    },
+    {
+      "id": "log-kamsvlaoe",
+      "details": "Booking #bk-eo4pvl38q status changed from pending to confirmed",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "createdAt": "2026-06-04T15:18:22.622Z"
+    },
+    {
+      "id": "log-kb3qiwizz",
+      "createdAt": "2026-06-04T08:48:31.066Z",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-kjsqfepv3",
+      "createdAt": "2026-06-04T15:20:54.219Z",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-105rbo1c3 for Mark James Villagonzalo"
+    },
+    {
+      "id": "log-krvhhhmwj",
+      "details": "Created pending booking #bk-flv1oh5c8 for sdfsf",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "createdAt": "2026-06-05T04:19:58.954Z"
+    },
+    {
+      "id": "log-l32y9unst",
+      "createdAt": "2026-06-05T06:18:38.696Z",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-fajt9ihb3 for sample"
+    },
+    {
+      "id": "log-l4ab2d2mc",
+      "actor": "CMS Website Builder",
+      "action": "UPDATE_CMS_THEME",
+      "details": "Updated CMS presentation, layout and details for Sample",
+      "createdAt": "2026-06-05T04:03:00.487Z"
+    },
+    {
+      "id": "log-l7d8slu7o",
+      "details": "Sent booking pending notice email to markjames.villagonzalo06@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-05T02:15:09.339Z"
+    },
+    {
+      "id": "log-lbc4lax9m",
+      "createdAt": "2026-06-05T04:20:50.872Z",
+      "details": "Booking #bk-hl9onfiup status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-lbfaax7h8",
+      "createdAt": "2026-06-04T08:48:31.544Z",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-m4oqx33vt",
+      "details": "Booking #bk-bb3lrx0ti status changed from pending to confirmed",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "createdAt": "2026-06-05T03:33:34.470Z"
+    },
+    {
+      "id": "log-mn4oguir1",
+      "createdAt": "2026-06-04T15:21:43.240Z",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGYBotyfEwQ9mQVAAAABFBALT8mTUrQ2ykFz.wFEkw",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-mog2pc6h4",
+      "actor": "Business Console",
+      "action": "CREATE_STAFF",
+      "details": "Added staff specialist: jay (barber)",
+      "createdAt": "2026-06-04T07:58:07.676Z"
+    },
+    {
+      "id": "log-my175btb0",
+      "createdAt": "2026-06-05T02:50:33.217Z",
+      "details": "Booking #bk-rqqcsgwas status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-n1osjxntk",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalo21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJERkaRd.PIr4apAAAACM8JoTg4ORTVVp3U2DPKRYQ",
+      "createdAt": "2026-06-05T03:36:38.525Z"
+    },
+    {
+      "id": "log-n8iizv8se",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "createdAt": "2026-06-05T04:21:38.635Z"
+    },
+    {
+      "id": "log-na56gmg63",
+      "details": "Sent appointment cancellation email to villagonzalomarkajmes21@gmail.com. Reason: sa",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-05T04:23:00.820Z"
+    },
+    {
+      "id": "log-nbpmph035",
+      "createdAt": "2026-06-05T06:20:33.944Z",
+      "details": "Booking #bk-fajt9ihb3 status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-nezqcbh2p",
+      "createdAt": "2026-06-04T15:17:07.429Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGW8kaRd.PIrbhkAAAAAcPGxJY56PRgJZbAM1Bymls",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-nm8kwfc9b",
+      "createdAt": "2026-06-04T15:26:24.911Z",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "details": "Booking #bk-owx587kbf status changed from confirmed to cancelled (Remarks: test)"
+    },
+    {
+      "id": "log-nphcuy7xj",
+      "createdAt": "2026-06-04T08:48:30.549Z",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-oac5j0yjy",
+      "createdAt": "2026-06-05T02:14:14.251Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com"
+    },
+    {
+      "id": "log-oas7lxy72",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-05T06:03:21.539Z"
+    },
+    {
+      "id": "log-out5z9w5e",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-mksgc1p74 status changed from pending to confirmed",
+      "createdAt": "2026-06-05T02:06:02.254Z"
+    },
+    {
+      "id": "log-pfngngvgg",
+      "createdAt": "2026-06-05T06:18:42.748Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-poaxvagui",
+      "details": "Sent booking confirmation email to villagonzalomarkajmes21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJDkYtyfEwQ-DCkAAAABfUirxq8i-PC7w6JEp0IF-s",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-05T03:33:37.786Z"
+    },
+    {
+      "id": "log-pq0vrpcow",
+      "details": "Booking #bk-u707th7n1 status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-04T15:23:13.252Z"
+    },
+    {
+      "id": "log-q8g4qi5cd",
+      "createdAt": "2026-06-04T08:43:12.772Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-qm5meu6rw",
+      "details": "Sent appointment cancellation email to villagonzalomarkjames21@gmail.com. Reason: test. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGZI4tyfEwQ9md1AAAACwVVEjHkMpisECmYB4omUT8",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-04T15:26:28.489Z"
+    },
+    {
+      "id": "log-qwe8vqcs0",
+      "createdAt": "2026-06-05T02:06:07.205Z",
+      "details": "Sent booking confirmation email to markjames.villagonzalo06@gmail.com. Test Link: https://ethereal.email/message/aiIvCwrZs4RPfnfRaiIvD-h.E5oJ1ccGAAAAAZ66rs0uqt5uW7Bz.tmRfRA",
+      "action": "SEND_EMAIL",
+      "actor": "Email System"
+    },
+    {
+      "id": "log-r47wjgcv4",
+      "createdAt": "2026-06-05T04:17:36.940Z",
+      "details": "Created service details for \"kasas\" ($20)",
+      "actor": "Business Console",
+      "action": "CREATE_SERVICE"
+    },
+    {
+      "id": "log-rbblcf2q1",
+      "createdAt": "2026-06-05T03:33:40.738Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to villagonzalomarkajmes21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJDlPsdSb1TYWVMAAAABnklhNYMC4.GSP1UMISd3Mw"
+    },
+    {
+      "id": "log-royaznkt3",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent booking pending notice email to villagonzalomarkajmes21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJDQOh.E5oJ1gTLAAAAAm.yE6tGP4ddZDGG1MYqxE4",
+      "createdAt": "2026-06-05T03:32:16.582Z"
+    },
+    {
+      "id": "log-sfjoiag3k",
+      "actor": "CMS Website Builder",
+      "action": "UPDATE_CMS_THEME",
+      "details": "Updated CMS presentation, layout and details for Sample",
+      "createdAt": "2026-06-04T08:51:42.994Z"
+    },
+    {
+      "id": "log-sh8fdkeoz",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-ocplo9t0a status changed from pending to cancelled (Remarks: sorry)",
+      "createdAt": "2026-06-04T08:41:15.728Z"
+    },
+    {
+      "id": "log-sjqmmzedw",
+      "details": "Sent merchant welcome email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-05T06:21:55.734Z"
+    },
+    {
+      "id": "log-slimujxug",
+      "details": "Booking #bk-bb3lrx0ti status changed from confirmed to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-05T03:33:37.382Z"
+    },
+    {
+      "id": "log-swg7t6u16",
+      "details": "Booking #bk-vitqbp5ql status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-04T15:24:52.979Z"
+    },
+    {
+      "id": "log-t66wzhuys",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-koan20or3 for maika",
+      "createdAt": "2026-06-04T08:12:15.829Z"
+    },
+    {
+      "id": "log-t9rab8or6",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGYpvsdSb1TX5s-AAAACUYrLo6y-j7KuRrVOpm4.mk",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-04T15:24:22.788Z"
+    },
+    {
+      "id": "log-tit7bdt2x",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "createdAt": "2026-06-05T02:50:36.065Z"
+    },
+    {
+      "id": "log-tm5van1tg",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-bb3lrx0ti for ASD",
+      "createdAt": "2026-06-05T03:32:16.591Z"
+    },
+    {
+      "id": "log-ub8wmzlt9",
+      "createdAt": "2026-06-05T04:21:04.788Z",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent booking confirmation email to villagonzalomarkajmes21@gmail.com"
+    },
+    {
+      "id": "log-uoq4zeg3f",
+      "createdAt": "2026-06-05T04:44:49.160Z",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-jh7ek7agc for fsdfs"
+    },
+    {
+      "id": "log-urr7tuv71",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-stxggh5d1 for Mark James Villagonzalo",
+      "createdAt": "2026-06-05T02:49:37.317Z"
+    },
+    {
+      "id": "log-urwr7r6c8",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiJA5ArZs4RPgQlQaiJA6ItyfEwQ-Cm3AAAAAT6cK5yxflmcY8dJA3Eu06E",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "createdAt": "2026-06-05T03:22:16.612Z"
+    },
+    {
+      "id": "log-vj664hjsv",
+      "createdAt": "2026-06-05T04:21:34.253Z",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-cop1q4dul status changed from pending to confirmed"
+    },
+    {
+      "id": "log-vojgwgqdp",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "details": "Created pending booking #bk-0ozso0i3w for james",
+      "createdAt": "2026-06-05T02:14:11.974Z"
+    },
+    {
+      "id": "log-vwiznw4lu",
+      "createdAt": "2026-06-05T06:03:16.805Z",
+      "details": "Booking #bk-1cnn701g3 status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-vyfzcodj5",
+      "details": "Successfully onboarded and provisioned tenant Sample (sample-test)",
+      "actor": "SaaS Onboarding Manager",
+      "action": "CREATE_TENANT",
+      "createdAt": "2026-06-04T07:56:37.761Z"
+    },
+    {
+      "id": "log-w7e4k3e45",
+      "details": "Removed category template ct-5",
+      "actor": "Super Admin",
+      "action": "DELETE_CATEGORY_TEMPLATE",
+      "createdAt": "2026-06-05T04:25:55.762Z"
+    },
+    {
+      "id": "log-wiyjrej8f",
+      "createdAt": "2026-06-05T03:31:38.387Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJDGuh.E5oJ1gSdAAAAAbc9Z3AWEyslxzs9Apk0ClI"
+    },
+    {
+      "id": "log-wxhdvcf2d",
+      "createdAt": "2026-06-05T04:52:01.317Z",
+      "details": "Created pending booking #bk-1cnn701g3 for fsdffsfsdfsdfsdgdf",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING"
+    },
+    {
+      "id": "log-x4kposl3q",
+      "createdAt": "2026-06-05T04:18:55.172Z",
+      "action": "CREATE_BOOKING",
+      "actor": "Booking Engine",
+      "details": "Created pending booking #bk-hl9onfiup for ADASD"
+    },
+    {
+      "id": "log-xc5gbj9k7",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "details": "Booking #bk-qvk37ktip status changed from pending to confirmed",
+      "createdAt": "2026-06-05T03:23:52.356Z"
+    },
+    {
+      "id": "log-xgs7sbo6i",
+      "createdAt": "2026-06-05T04:20:56.242Z",
+      "details": "Sent booking confirmation email to villagonzalomarkajmes21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-xq4e47fia",
+      "createdAt": "2026-06-04T16:11:29.878Z",
+      "details": "Sent booking pending notice email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGjsfsdSb1TX7aNAAAADPDVRq0yMP58zgGy6ENT.dA",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    },
+    {
+      "id": "log-xr0np1nvv",
+      "details": "Created pending booking #bk-mksgc1p74 for Villagonzalo",
+      "actor": "Booking Engine",
+      "action": "CREATE_BOOKING",
+      "createdAt": "2026-06-04T16:13:29.763Z"
+    },
+    {
+      "id": "log-xsywzkb0j",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "details": "Sent booking pending notice email to markjames.villagonzalo06@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGkLItyfEwQ9oToAAAADS2ILsaWG1dZVhY6iOzR-pY",
+      "createdAt": "2026-06-04T16:13:33.167Z"
+    },
+    {
+      "id": "log-ye6j9eg5o",
+      "details": "Booking #bk-3cdkxcn7c status changed from confirmed to cancelled (Remarks: sorry)",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS",
+      "createdAt": "2026-06-05T04:03:49.392Z"
+    },
+    {
+      "id": "log-yg2gmmzlu",
+      "details": "Sent booking confirmation email to villagonzalo21@gmail.com. Test Link: https://ethereal.email/message/aiJDFgrZs4RPgWAsaiJFQ0aRd.PIr4hzAAAACZI84ibodDv29mRVg1unhGY",
+      "action": "SEND_EMAIL",
+      "actor": "Email System",
+      "createdAt": "2026-06-05T03:40:51.840Z"
+    },
+    {
+      "id": "log-ytrqi1qhz",
+      "details": "Booking #bk-u78binzh9 status changed from pending to confirmed",
+      "action": "UPDATE_BOOKING_STATUS",
+      "actor": "Business Dashboard",
+      "createdAt": "2026-06-05T02:50:31.675Z"
+    },
+    {
+      "id": "log-z0ky583wk",
+      "createdAt": "2026-06-04T15:23:05.496Z",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "details": "Sent booking confirmation email to vince.t@industry.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGYWPsdSb1TX5p1AAAAB6PtjC-EGAN31Z6uhze1JCg"
+    },
+    {
+      "id": "log-z0vchfaxn",
+      "createdAt": "2026-06-05T02:07:45.033Z",
+      "details": "Booking #bk-g43wvetca status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-z49ua1q23",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-05T04:21:32.151Z"
+    },
+    {
+      "id": "log-zmufbv2r6",
+      "details": "Sent booking confirmation email to villagonzalomarkjames21@gmail.com. Test Link: https://ethereal.email/message/aiGW7grZs4RPbUjsaiGXQuh.E5oJ1DP5AAAAApeP0qxvlUYPNXS22dEURNk",
+      "actor": "Email System",
+      "action": "SEND_EMAIL",
+      "createdAt": "2026-06-04T15:18:26.863Z"
+    },
+    {
+      "id": "log-zqoqe0rs3",
+      "createdAt": "2026-06-04T15:23:01.400Z",
+      "details": "Booking #bk-6 status changed from pending to confirmed",
+      "actor": "Business Dashboard",
+      "action": "UPDATE_BOOKING_STATUS"
+    },
+    {
+      "id": "log-ztcp8ru88",
+      "createdAt": "2026-06-05T04:19:00.835Z",
+      "details": "Sent booking pending notice email to villagonzalomarkajmes21@gmail.com",
+      "actor": "Email System",
+      "action": "SEND_EMAIL"
+    }
+  ],
+  "blockedSlots": [],
+  "categoryTemplates": [
+    {
+      "id": "ct-1",
+      "slug": "hair-salon",
+      "label": "Hair & Barber",
+      "icon": "✂️",
+      "description": "Salons, barbershops, and hair styling studios",
+      "defaultCategories": [
+        "Coloring",
+        "Styling",
+        "Therapy",
+        "Consultation",
+        "General"
+      ],
+      "defaultHeroImage": "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=1200",
+      "isActive": true,
+      "sortOrder": 1
+    },
+    {
+      "id": "ct-2",
+      "slug": "nail-salon",
+      "label": "Nails & Glow",
+      "icon": "💅",
+      "description": "Nail art, manicure, pedicure, and spa services",
+      "defaultCategories": [
+        "Artistry",
+        "Manicure",
+        "Pedicure",
+        "Spa Care",
+        "General"
+      ],
+      "defaultHeroImage": "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=1200",
+      "isActive": true,
+      "sortOrder": 2
+    },
+    {
+      "id": "ct-3",
+      "slug": "tattoo-studio",
+      "label": "Ink & Art",
+      "icon": "🎨",
+      "description": "Tattoo studios and body art specialists",
+      "defaultCategories": [
+        "Tattooing",
+        "Piercing",
+        "Consultation",
+        "Aftercare",
+        "General"
+      ],
+      "defaultHeroImage": "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&q=80&w=1200",
+      "isActive": true,
+      "sortOrder": 3
+    },
+    {
+      "id": "ct-4",
+      "slug": "makeup-artist",
+      "label": "Makeup & Style",
+      "icon": "💄",
+      "description": "Makeup artists, bridal, and event styling",
+      "defaultCategories": [
+        "Bridal Makeup",
+        "Event Styling",
+        "Lash & Brow",
+        "General"
+      ],
+      "defaultHeroImage": "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=1200",
+      "isActive": true,
+      "sortOrder": 4
+    }
+  ]
+}

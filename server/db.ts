@@ -4,21 +4,106 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, initializeFirestore, collection, doc, getDocs, setDoc, deleteDoc, query, where } from "firebase/firestore";
 import { 
   User, UserRole, BusinessTenant, Service, Staff, Customer, 
-  Booking, Review, BlogPost, FAQItem, AuditLog, EmailTemplate, BlockedSlot
+  Booking, Review, BlogPost, FAQItem, AuditLog, EmailTemplate, BlockedSlot,
+  CategoryTemplate
 } from "../src/types";
+
+export const DEFAULT_CATEGORY_TEMPLATES: CategoryTemplate[] = [
+  {
+    id: "ct-1",
+    slug: "hair-salon",
+    label: "Hair & Barber",
+    icon: "✂️",
+    description: "Salons, barbershops, and hair styling studios",
+    defaultCategories: ["Coloring", "Styling", "Therapy", "Consultation", "General"],
+    defaultHeroImage: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=1200",
+    isActive: true,
+    sortOrder: 1,
+  },
+  {
+    id: "ct-2",
+    slug: "nail-salon",
+    label: "Nails & Glow",
+    icon: "💅",
+    description: "Nail art, manicure, pedicure, and spa services",
+    defaultCategories: ["Artistry", "Manicure", "Pedicure", "Spa Care", "General"],
+    defaultHeroImage: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=1200",
+    isActive: true,
+    sortOrder: 2,
+  },
+  {
+    id: "ct-3",
+    slug: "tattoo-studio",
+    label: "Ink & Art",
+    icon: "🎨",
+    description: "Tattoo studios and body art specialists",
+    defaultCategories: ["Tattooing", "Piercing", "Consultation", "Aftercare", "General"],
+    defaultHeroImage: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&q=80&w=1200",
+    isActive: true,
+    sortOrder: 3,
+  },
+  {
+    id: "ct-4",
+    slug: "makeup-artist",
+    label: "Makeup & Style",
+    icon: "💄",
+    description: "Makeup artists, bridal, and event styling",
+    defaultCategories: ["Bridal Makeup", "Event Styling", "Lash & Brow", "General"],
+    defaultHeroImage: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&q=80&w=1200",
+    isActive: true,
+    sortOrder: 4,
+  },
+  {
+    id: "ct-5",
+    slug: "generic-coaching",
+    label: "Wellness Clinic",
+    icon: "🌱",
+    description: "Coaching, wellness, and appointment-based clinics",
+    defaultCategories: ["1-on-1 Coaching", "Group Workshop", "Mental Wellness", "General"],
+    defaultHeroImage: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=1200",
+    isActive: true,
+    sortOrder: 5,
+  },
+];
 
 const DB_PATH = path.join(process.cwd(), "data", "db.json");
 
-// Dynamic Firestore Setup
-const CONFIG_PATH = path.join(process.cwd(), "firebase-applet-config.json");
-let firebaseConfig: any = null;
-if (fs.existsSync(CONFIG_PATH)) {
-  try {
-    firebaseConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
-  } catch (err) {
-    console.error("[FIREBASE CONFIG] Parse error: ", err);
+// Dynamic Firestore Setup — env vars (Vercel) or firebase-applet-config.json (local)
+function loadFirebaseConfig(): Record<string, string> | null {
+  const jsonEnv = process.env.FIREBASE_CONFIG?.trim();
+  if (jsonEnv) {
+    try {
+      return JSON.parse(jsonEnv);
+    } catch (err) {
+      console.error("[FIREBASE CONFIG] FIREBASE_CONFIG JSON parse error:", err);
+    }
   }
+
+  const fromEnv = {
+    apiKey: process.env.FIREBASE_API_KEY?.trim(),
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN?.trim(),
+    projectId: process.env.FIREBASE_PROJECT_ID?.trim(),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET?.trim(),
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID?.trim(),
+    appId: process.env.FIREBASE_APP_ID?.trim(),
+    firestoreDatabaseId: process.env.FIRESTORE_DATABASE_ID?.trim(),
+  };
+  if (fromEnv.apiKey && fromEnv.projectId && fromEnv.appId) {
+    return fromEnv as Record<string, string>;
+  }
+
+  const CONFIG_PATH = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(CONFIG_PATH)) {
+    try {
+      return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+    } catch (err) {
+      console.error("[FIREBASE CONFIG] Parse error:", err);
+    }
+  }
+  return null;
 }
+
+const firebaseConfig = loadFirebaseConfig();
 
 let firebaseApp: any = null;
 let firestoreDb: any = null;
@@ -89,11 +174,12 @@ interface DBStructure {
   emailTemplates: EmailTemplate[];
   auditLogs: AuditLog[];
   blockedSlots?: BlockedSlot[];
+  categoryTemplates?: CategoryTemplate[];
 }
 
 const INITIAL_DB: DBStructure = {
   users: [
-    { id: "u-1", email: "admin@platform.com", name: "Super Platform Admin", role: UserRole.SUPER_ADMIN },
+    { id: "u-1", email: "unibook562026@gmail.com", name: "Super Platform Admin", role: UserRole.SUPER_ADMIN },
     { id: "u-2", email: "sarah@chiccuts.com", name: "Sarah Connor (Owner)", role: UserRole.BUSINESS_ADMIN, businessId: "b-1" },
     { id: "u-3", email: "david@chiccuts.com", name: "David Johnson", role: UserRole.STAFF, businessId: "b-1" },
     { id: "u-4", email: "customer1@gmail.com", name: "Alex Mercer", role: UserRole.CUSTOMER },
@@ -182,6 +268,23 @@ const INITIAL_DB: DBStructure = {
     { id: "s-101", businessId: "b-1", name: "Premium Balayage & Olaplex", category: "Coloring", description: "Seamless, hand-painted balayage lighting with full structural plex reconstruction. Includes wash, scalp massage, and blowout.", price: 185, duration: 150, image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=300", staffIds: ["st-1", "st-2"] },
     { id: "s-102", businessId: "b-1", name: "Designer Cut & Customized Treatment", category: "Styling", description: "Artistic hair profile mapping, texturizing, structural style restoration, and hydration masks.", price: 85, duration: 60, image: "https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?auto=format&fit=crop&q=80&w=300", staffIds: ["st-1", "st-2", "st-3"] },
     { id: "s-103", businessId: "b-1", name: "Scalp Hydromassage & Botanical Restructure", category: "Therapy", description: "Exfoliating wash, micro-steam hydration infusion, tea tree scalp cleanse, and essential oil sensory therapy.", price: 60, duration: 45, image: "https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&q=80&w=300", staffIds: ["st-2", "st-3"] },
+    {
+      id: "s-104",
+      businessId: "b-1",
+      name: "Bridal & Wedding Hair Packages",
+      category: "Styling",
+      description: "Complete wedding hair services — from trial sessions to day-of styling for the bride and bridal party.",
+      price: 350,
+      duration: 120,
+      image: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=300",
+      staffIds: ["st-1", "st-2"],
+      variants: [
+        { id: "sv-trial", name: "Bridal Trial Session", description: "90-minute trial with style consultation, test updo or waves, and photo references.", price: 150, duration: 90 },
+        { id: "sv-bride", name: "Bride Day-Of Styling", description: "On-location or in-salon styling on wedding day including prep and finishing.", price: 450, duration: 150 },
+        { id: "sv-party", name: "Bridal Party (per person)", description: "Coordinated styling for bridesmaids — blowout, curls, or simple updo.", price: 120, duration: 60 },
+        { id: "sv-full", name: "Full Wedding Package", description: "Trial + bride day-of + up to 4 bridal party members. Best value for complete wedding prep.", price: 950, duration: 360 },
+      ],
+    },
     { id: "s-201", businessId: "b-2", name: "Bespoke Gel Painting & Hard Gel Full Set", category: "Artistry", description: "Nailbed structure analysis, tip extension, advanced sculpture, and custom fine-art hand painted graphics.", price: 120, duration: 90, image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=300", staffIds: ["st-4", "st-5"] },
     { id: "s-202", businessId: "b-2", name: "Matcha Botanical Hand & Arm Spa", category: "Spa Care", description: "Warm matcha herbal bath clean, Dead sea salt mineral scrub, paraffin moisture wax wrap, and rose oil massage.", price: 55, duration: 45, image: "https://images.unsplash.com/photo-1519415590266-606093cd53fc?auto=format&fit=crop&q=80&w=300", staffIds: ["st-5"] },
     { id: "s-301", businessId: "b-3", name: "Custom Tattoo Conception Session", category: "Consultation", description: "One-on-one session with our master, visual mood boarding, reference mapping, sketching layout, and skin placement test.", price: 50, duration: 60, image: "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&q=80&w=300", staffIds: ["st-6", "st-7"] },
@@ -231,7 +334,8 @@ const INITIAL_DB: DBStructure = {
   auditLogs: [
     { id: "log-1", createdAt: "2026-06-03T09:12:00Z", actor: "System Seed", action: "PLATFORM_INIT", details: "Bootstrap multi-tenant database with 3 industry tenant presets successfully." }
   ],
-  blockedSlots: []
+  blockedSlots: [],
+  categoryTemplates: DEFAULT_CATEGORY_TEMPLATES,
 };
 
 export class Database {
@@ -328,6 +432,10 @@ export class Database {
         this.data = JSON.parse(fileContent);
         if (!this.data.blockedSlots) {
           this.data.blockedSlots = [];
+        }
+        if (!this.data.categoryTemplates || this.data.categoryTemplates.length === 0) {
+          this.data.categoryTemplates = [...DEFAULT_CATEGORY_TEMPLATES];
+          this.save();
         }
       } else {
         this.save();
@@ -836,6 +944,39 @@ export class Database {
 
     // Propagate Async
     saveDocument("auditLogs", log.id, log);
+  }
+
+  // --- CATEGORY TEMPLATES (platform) ---
+  getCategoryTemplates(activeOnly = false): CategoryTemplate[] {
+    const list = this.data.categoryTemplates || DEFAULT_CATEGORY_TEMPLATES;
+    const sorted = [...list].sort((a, b) => a.sortOrder - b.sortOrder);
+    return activeOnly ? sorted.filter((t) => t.isActive) : sorted;
+  }
+
+  createCategoryTemplate(t: Omit<CategoryTemplate, "id">): CategoryTemplate {
+    if (!this.data.categoryTemplates) this.data.categoryTemplates = [];
+    const template: CategoryTemplate = {
+      ...t,
+      id: "ct-" + Math.random().toString(36).substr(2, 9),
+    };
+    this.data.categoryTemplates.push(template);
+    this.save();
+    return template;
+  }
+
+  updateCategoryTemplate(id: string, updates: Partial<CategoryTemplate>): CategoryTemplate {
+    if (!this.data.categoryTemplates) this.data.categoryTemplates = [...DEFAULT_CATEGORY_TEMPLATES];
+    const idx = this.data.categoryTemplates.findIndex((t) => t.id === id);
+    if (idx === -1) throw new Error("Category template not found");
+    this.data.categoryTemplates[idx] = { ...this.data.categoryTemplates[idx], ...updates };
+    this.save();
+    return this.data.categoryTemplates[idx];
+  }
+
+  deleteCategoryTemplate(id: string): void {
+    if (!this.data.categoryTemplates) return;
+    this.data.categoryTemplates = this.data.categoryTemplates.filter((t) => t.id !== id);
+    this.save();
   }
 }
 

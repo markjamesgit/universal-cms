@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Mail, CheckCircle2, CloudLightning, Save } from "lucide-react";
+import { Mail, CheckCircle2, Save } from "lucide-react";
 import { EmailTemplate } from "../../types";
 
 interface EmailWorkflowsProps {
@@ -11,7 +11,6 @@ export default function EmailWorkflows({
   emailTemplates,
   handleSaveEmailTemplate,
 }: EmailWorkflowsProps) {
-  // Store form state locally for each key to make editing incredibly reliable
   const [editingTemplate, setEditingTemplate] = useState<Record<string, { subject: string; body: string }>>({});
   const [successKey, setSuccessKey] = useState<string | null>(null);
 
@@ -37,49 +36,46 @@ export default function EmailWorkflows({
   };
 
   return (
-    <div className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-6">
-      <div className="border-b border-white/5 pb-4">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Mail className="w-5 h-5 text-yellow-450" />
+    <div className="ui-card-pad space-y-6">
+      <div className="border-b border-zinc-200 pb-4">
+        <h2 className="ui-heading flex items-center gap-2">
+          <Mail className="w-5 h-5 text-zinc-600" />
           Email Notifications
         </h2>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Customize email receipts and reminder messages sent to guests when they schedule appointments.
+        <p className="ui-subtext mt-1">
+          Customize email receipts and reminders sent to guests when they schedule appointments.
         </p>
       </div>
 
       <div className="space-y-6">
         {emailTemplates.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-xs italic border border-dashed border-white/10 rounded-2xl">
+          <div className="p-12 text-center text-sm text-zinc-500 border border-dashed border-zinc-200 rounded-lg">
             Preparing default notification parameters...
           </div>
         ) : (
           emailTemplates.map((item) => {
-            // Lazy initialize local state for this item
             syncTemplate(item.key, item);
             const currentFormObj = editingTemplate[item.key] || { subject: item.subject, body: item.body };
 
             return (
-              <div key={item.key} className="p-6 bg-white/[0.01] border border-white/5 hover:border-white/10 rounded-2xl space-y-4 transition-all">
+              <div key={item.key} className="p-5 bg-white border border-zinc-200 rounded-lg space-y-4">
                 <div className="flex justify-between items-center flex-wrap gap-2">
-                  <span className="text-xs font-black uppercase text-indigo-400 font-mono tracking-wider">
-                    ✉️ Message Trigger: {item.key.replace("_", " ")}
+                  <span className="font-medium text-zinc-900 text-sm capitalize">
+                    {item.key.replace("_", " ")}
                   </span>
-                  <span className="px-2.5 py-1 bg-emerald-950/40 border border-emerald-500/10 text-emerald-400 text-[10px] uppercase font-bold tracking-tight rounded-lg flex items-center gap-1 font-mono">
-                    <CloudLightning className="w-3.5 h-3.5" /> Template Active
-                  </span>
+                  <span className="ui-badge ui-badge-success">Active</span>
                 </div>
 
-                <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl space-y-2 text-xs">
-                  <p className="text-slate-300 font-semibold font-mono">Dynamic Text Variables Supported:</p>
-                  <p className="font-mono text-indigo-305 text-[11px] leading-relaxed select-all">
-                    {"{{customerName}} • {{serviceName}} • {{bookingDate}} • {{bookingTime}} • {{staffName}}"}
+                <div className="bg-zinc-50 border border-zinc-200 p-4 rounded-lg space-y-2">
+                  <p className="ui-label">Dynamic variables</p>
+                  <p className="text-sm text-zinc-600 select-all">
+                    {"{{customerName}} · {{serviceName}} · {{bookingDate}} · {{bookingTime}} · {{staffName}}"}
                   </p>
                 </div>
 
-                <div className="space-y-3.5 text-xs">
+                <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-slate-400 font-medium">Email Subject Line:</label>
+                    <label className="ui-label">Email Subject</label>
                     <input
                       type="text"
                       value={currentFormObj.subject}
@@ -89,12 +85,11 @@ export default function EmailWorkflows({
                           [item.key]: { ...currentFormObj, subject: e.target.value },
                         })
                       }
-                      className="w-full bg-[#121216] border border-white/10 rounded-xl px-4 py-2 text-white font-sans focus:outline-none focus:border-indigo-505"
+                      className="ui-input"
                     />
                   </div>
-
                   <div className="space-y-1">
-                    <label className="text-slate-400 font-medium">Email Message Body:</label>
+                    <label className="ui-label">Email Body</label>
                     <textarea
                       rows={5}
                       value={currentFormObj.body}
@@ -104,25 +99,20 @@ export default function EmailWorkflows({
                           [item.key]: { ...currentFormObj, body: e.target.value },
                         })
                       }
-                      className="w-full bg-[#121216] border border-white/10 rounded-xl p-3.5 text-slate-205 font-mono leading-relaxed focus:outline-none focus:border-indigo-550"
-                    ></textarea>
+                      className="ui-input"
+                    />
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
-                  <span className="text-[10px] text-slate-550 italic font-mono font-light shrink-0">
-                    Saves are updated immediately.
-                  </span>
+                  <span className="text-xs text-zinc-500">Changes save immediately.</span>
                   <div className="flex items-center gap-3">
                     {successKey === item.key && (
-                      <span className="text-emerald-450 text-xs font-semibold flex items-center gap-1 animate-pulse">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Saved successfully!
+                      <span className="text-sm text-emerald-700 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" /> Saved
                       </span>
                     )}
-                    <button
-                      onClick={() => handleSave(item.key)}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-md cursor-pointer hover:scale-[1.02]"
-                    >
+                    <button onClick={() => handleSave(item.key)} className="ui-btn-primary text-xs">
                       <Save className="w-3.5 h-3.5" /> Save Template
                     </button>
                   </div>

@@ -3,7 +3,8 @@ import {
   Scissors, MapPin, Phone, Mail, Clock, Calendar, Star, Sparkles, 
   ChevronDown, Send, MessageSquare, BookOpen, ExternalLink, RefreshCw, Check
 } from "lucide-react";
-import { BusinessTenant, Service, Staff, Review, BlogPost, FAQItem } from "../types";
+import { BusinessTenant, Service, ServiceVariant, Staff, Review, BlogPost, FAQItem } from "../types";
+import { hasServiceVariants, getEffectivePrice } from "../lib/serviceUtils";
 
 interface CmsWebsiteViewerProps {
   business: BusinessTenant;
@@ -12,13 +13,15 @@ interface CmsWebsiteViewerProps {
   reviews: Review[];
   blogs: BlogPost[];
   faqs: FAQItem[];
-  onLaunchBooking: (service?: Service) => void;
+  onLaunchBooking: (service?: Service, variant?: ServiceVariant) => void;
   onSubmitReview: (reviewData: {
     customerName: string;
     serviceName: string;
     rating: number;
     comment: string;
   }) => Promise<any>;
+  /** When true (iframe preview), use min height that fits the embed container */
+  embedded?: boolean;
 }
 
 export default function CmsWebsiteViewer({
@@ -30,6 +33,7 @@ export default function CmsWebsiteViewer({
   faqs,
   onLaunchBooking,
   onSubmitReview,
+  embedded = false,
 }: CmsWebsiteViewerProps) {
   const [activeTab, setActiveTab] = useState<"home" | "services" | "reviews" | "blog" | "faq">("home");
   const [writeReviewOpen, setWriteReviewOpen] = useState(false);
@@ -40,6 +44,9 @@ export default function CmsWebsiteViewer({
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSubmittedSuccess, setReviewSubmittedSuccess] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
+  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
+
+  const activeServices = services.filter((s) => s.isActive !== false);
 
   // Fallback hero images if not configured in JSON db
   const templateImages: Record<string, string> = {
@@ -50,7 +57,7 @@ export default function CmsWebsiteViewer({
     "generic-coaching": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=1200"
   };
 
-  const heroImage = templateImages[business.templateType] || templateImages["hair-salon"];
+  const heroImage = business.heroImage || templateImages[business.templateType] || templateImages["hair-salon"];
 
   const getThemeColorClass = () => {
     switch (business.theme.primaryPalette) {
@@ -84,6 +91,75 @@ export default function CmsWebsiteViewer({
   const pTextClass = "cms-p-text";
   const pBorderClass = "cms-p-border";
   const pBgClass = "cms-p-bg";
+
+  const renderServicePackages = (srv: Service, compact = false) => {
+    const withVariants = hasServiceVariants(srv);
+    const expanded = expandedServiceId === srv.id;
+
+    if (!withVariants) {
+      return (
+        <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 rounded-2xl p-4 flex flex-col justify-between backdrop-blur group">
+          <div>
+            {srv.image && <img src={srv.image} alt={srv.name} className="w-full h-32 object-cover rounded-lg mb-3 border border-white/10" />}
+            <span className="text-[9px] uppercase font-bold text-emerald-400 tracking-widest bg-emerald-950/20 px-2 py-0.5 rounded inline-block">{srv.category}</span>
+            <h4 className="text-sm font-bold text-white mt-2 group-hover:text-indigo-400 transition-colors">{srv.name}</h4>
+            <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{srv.description}</p>
+          </div>
+          <div className="flex justify-between items-center mt-4 pt-2 border-t border-white/5">
+            <div className="text-xs font-semibold text-slate-350">{srv.duration} Mins</div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-100">₱{srv.price}</span>
+              <button type="button" onClick={() => onLaunchBooking(srv)} className={`p-1.5 text-xs font-black bg-white/10 text-white hover:bg-neutral-200 hover:text-black rounded-lg transition-all ${buttonRoundingClass()}`}>
+                Book
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden backdrop-blur">
+        <button
+          type="button"
+          onClick={() => setExpandedServiceId(expanded ? null : srv.id)}
+          className="w-full p-4 flex justify-between items-start gap-3 text-left hover:bg-white/[0.03] transition-colors"
+        >
+          <div className="min-w-0">
+            {srv.image && !compact && <img src={srv.image} alt={srv.name} className="w-full h-28 object-cover rounded-lg mb-2 border border-white/10" />}
+            <span className="text-[9px] uppercase font-bold text-emerald-400 tracking-widest bg-emerald-950/20 px-2 py-0.5 rounded inline-block">{srv.category}</span>
+            <h4 className="text-sm font-bold text-white mt-2">{srv.name}</h4>
+            <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{srv.description}</p>
+            <p className="text-[10px] text-slate-500 mt-2">{srv.variants!.length} packages · from ₱{getEffectivePrice(srv)}</p>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+        {expanded && (
+          <div className="border-t border-white/5 px-3 pb-3 space-y-2">
+            {srv.variants!.map((variant) => (
+              <div key={variant.id} className="p-3 rounded-xl bg-black/30 border border-white/5 flex justify-between gap-3 items-start">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white">{variant.name}</p>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{variant.description}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">{variant.duration} minutes</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold text-white">₱{variant.price}</p>
+                  <button
+                    type="button"
+                    onClick={() => onLaunchBooking(srv, variant)}
+                    className={`mt-2 px-3 py-1 text-[10px] font-bold ${pBtnClass} ${buttonRoundingClass()}`}
+                  >
+                    Book this
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handlePostReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,7 +199,7 @@ export default function CmsWebsiteViewer({
     themeColor === "amber" ? "#f59e0b" : "#6366f1";
 
   return (
-    <div className={`w-full min-h-screen text-slate-100 bg-[#0e0f13] select-text relative pb-12 custom-bg-override custom-text-override font-size-container ${fontClass()}`}>
+    <div className={`w-full ${embedded ? "min-h-0" : "min-h-screen"} text-slate-100 bg-[#0e0f13] select-text relative pb-12 custom-bg-override custom-text-override font-size-container ${fontClass()}`}>
       
       {/* Dynamic Style injection block to bind custom fonts, colors, and font sizes with zero inline style attributes */}
       <style>{`
@@ -374,9 +450,24 @@ export default function CmsWebsiteViewer({
               </div>
             )}
 
+            {/* GALLERY */}
+            {business.galleryImages && business.galleryImages.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white tracking-tight">Gallery</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {business.galleryImages.map((img, idx) => (
+                    <img key={idx} src={img} alt={`${business.name} gallery ${idx + 1}`} className="w-full h-36 md:h-44 object-cover rounded-xl border border-white/10" />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* QUICK BRAND DETAIL (ABOUT) SECTION */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch pt-2">
               <div className="md:col-span-2 bg-white/5 border border-white/5 p-6 rounded-2xl backdrop-blur-md flex flex-col justify-between">
+                {business.aboutImage && (
+                  <img src={business.aboutImage} alt="About us" className="w-full h-40 object-cover rounded-xl mb-4 border border-white/10" />
+                )}
                 <div>
                   <h2 className="text-lg font-bold text-white mb-3">Our Core Philosophy</h2>
                   <p className="text-xs text-slate-300 leading-relaxed font-light">
@@ -420,26 +511,8 @@ export default function CmsWebsiteViewer({
                 <span onClick={() => setActiveTab("services")} className={`text-xs text-${themeColor}-400 hover:underline cursor-pointer`}>View Service Catalog →</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {services.slice(0, 3).map(col => (
-                  <div key={col.id} className="bg-white/[0.02] border border-white/5 hover:border-white/10 rounded-2xl p-4 flex flex-col justify-between backdrop-blur group">
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-emerald-400 tracking-widest bg-emerald-950/20 px-2 py-0.5 rounded inline-block">{col.category}</span>
-                      <h4 className="text-sm font-bold text-white mt-2 group-hover:text-indigo-400 transition-colors">{col.name}</h4>
-                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{col.description}</p>
-                    </div>
-                    <div className="flex justify-between items-center mt-4 pt-2 border-t border-white/5">
-                      <div className="text-xs font-semibold text-slate-350">{col.duration} Mins</div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-100">₱{col.price}</span>
-                        <button 
-                          onClick={() => onLaunchBooking(col)}
-                          className={`p-1.5 text-xs font-black bg-white/10 text-white hover:bg-neutral-200 hover:text-black rounded-lg transition-all`}
-                        >
-                          Book Appointment
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                {activeServices.slice(0, 3).map((col) => (
+                  <div key={col.id}>{renderServicePackages(col, true)}</div>
                 ))}
               </div>
             </div>
@@ -478,32 +551,8 @@ export default function CmsWebsiteViewer({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {services.map(srv => (
-                <div key={srv.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 flex gap-4 backdrop-blur-md">
-                  {srv.image && (
-                    <img src={srv.image || undefined} alt={srv.name} className="w-20 h-20 rounded-xl object-cover border border-white/5 flex-shrink-0" />
-                  )}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] uppercase font-bold bg-white/5 px-2 py-0.5 rounded text-indigo-400">{srv.category}</span>
-                        <span className="text-md font-bold text-white">₱{srv.price}</span>
-                      </div>
-                      <h3 className="text-sm font-bold text-slate-100 mt-1">{srv.name}</h3>
-                      <p className="text-xs text-slate-400 line-clamp-2 mt-1">{srv.description}</p>
-                    </div>
-                    
-                    <div className="flex justify-between items-center mt-4 pt-2 border-t border-white/5">
-                      <span className="text-xs text-slate-400">{srv.duration} minutes</span>
-                      <button
-                        onClick={() => onLaunchBooking(srv)}
-                        className={`px-4 py-1.5 text-xs font-bold transition-all ${pBtnClass} ${buttonRoundingClass()}`}
-                      >
-                        Book slot
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              {activeServices.map((srv) => (
+                <div key={srv.id}>{renderServicePackages(srv)}</div>
               ))}
             </div>
           </div>

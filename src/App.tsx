@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { 
   LayoutDashboard, Calendar as CalendarIcon, Users, Scissors, Settings, 
-  Plus, Search, Check, X, ChevronDown, ChevronRight, Star, Mail, Phone, 
+  Plus, Check, X, ChevronDown, ChevronRight, Star, Mail, Phone, 
   MapPin, Sparkles, TrendingUp, Trash2, Edit, ShieldAlert, FileText, 
   Sliders, Globe, RefreshCw, SlidersHorizontal, History, UserCheck, 
   LogOut, PlusCircle, AlertCircle, Info, Send, BookOpen, Layers,
-  Smartphone, Tablet, Monitor, User as UserIcon
+  User as UserIcon
 } from "lucide-react";
 import { 
-  UserRole, BusinessTenant, Service, Staff, Customer, 
-  Booking, Review, BlogPost, FAQItem, AuditLog, EmailTemplate, ThemePalette, ThemeFont, User
+  UserRole, BusinessTenant, Service, ServiceVariant, Staff, Customer, 
+  Booking, Review, BlogPost, FAQItem, AuditLog, EmailTemplate, ThemePalette, ThemeFont, User,
+  CategoryTemplate,
 } from "./types";
 
 // Business Core Sub-Components
@@ -29,8 +30,51 @@ import CrmGuests from "./components/backoffice/CrmGuests";
 import CmsCustomizer from "./components/backoffice/CmsCustomizer";
 import EmailWorkflows from "./components/backoffice/EmailWorkflows";
 import PersonalProfile from "./components/backoffice/PersonalProfile";
+import CategoryTemplateManager from "./components/backoffice/CategoryTemplateManager";
+import SearchInput from "./components/ui/SearchInput";
+import { parseAppRoute, pushRoute, getTenantPublicUrl, getTenantPublicPath } from "./lib/tenantUrl";
+import { EMAIL_PLACEHOLDER, validateEmail } from "./lib/contactFormats";
 
-type BackofficeTab = "dashboard" | "calendar" | "services" | "staff" | "crm" | "cms" | "emails" | "logs" | "profile";
+type BackofficeTab = "dashboard" | "calendar" | "services" | "staff" | "crm" | "cms" | "emails" | "logs" | "profile" | "templates";
+
+const isEmbedPreview =
+  typeof window !== "undefined" &&
+  (window.self !== window.top || new URLSearchParams(window.location.search).get("preview") === "1");
+
+const ADMIN_SESSION_KEY = "unibook_admin_session";
+
+type AdminSession = {
+  loginEmail: string;
+  currentRole: UserRole;
+  activeBusinessId: string | null;
+  activeTab: BackofficeTab;
+};
+
+const saveAdminSession = (session: AdminSession) => {
+  try {
+    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // sessionStorage unavailable
+  }
+};
+
+const clearAdminSession = () => {
+  try {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  } catch {
+    // sessionStorage unavailable
+  }
+};
+
+const loadAdminSession = (): AdminSession | null => {
+  try {
+    const raw = sessionStorage.getItem(ADMIN_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AdminSession;
+  } catch {
+    return null;
+  }
+};
 
 export default function App() {
   // Authentication & Actors simulations switcher
@@ -43,6 +87,7 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
   const [trackEmail, setTrackEmail] = useState("");
+  const [trackEmailError, setTrackEmailError] = useState("");
   const [trackedBookings, setTrackedBookings] = useState<Booking[]>([]);
   const [hasTracked, setHasTracked] = useState(false);
   const [isSearchingTrack, setIsSearchingTrack] = useState(false);
@@ -70,12 +115,12 @@ export default function App() {
   const [loginTab, setLoginTab] = useState<"merchant" | "super_admin">("merchant");
 
   // Multi-brand device simulation frames
-  const [simDevice, setSimDevice] = useState<"desktop" | "iphone" | "samsung" | "pixel" | "ipad-pro" | "ipad-mini">("desktop");
-
   // Layout View Modals and Overlays controllers
   const [activeTab, setActiveTab] = useState<BackofficeTab>("dashboard");
   const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
   const [bookingWizardOpen, setBookingWizardOpen] = useState(false);
+  const [wizardPreselect, setWizardPreselect] = useState<{ service?: Service; variant?: ServiceVariant } | null>(null);
+  const [categoryTemplates, setCategoryTemplates] = useState<CategoryTemplate[]>([]);
   const [cmsPreviewOpen, setCmsPreviewOpen] = useState(false);
   const [notificationToast, setNotificationToast] = useState<{ message: string; submessage?: string; type: "success" | "info" } | null>(null);
 
@@ -84,7 +129,101 @@ export default function App() {
     fetchTenants();
     fetchAuditLogs();
     fetchUsers();
+    fetchCategoryTemplates();
   }, []);
+
+  const fetchCategoryTemplates = async () => {
+    try {
+      const res = await fetch("/api/category-templates");
+      const data = await res.json();
+      if (Array.isArray(data)) setCategoryTemplates(data);
+    } catch {
+      // ignore
+    }
+  };
+
+  const openBookingWizard = (service?: Service, variant?: ServiceVariant) => {
+    setWizardPreselect(service ? { service, variant } : null);
+    setBookingWizardOpen(true);
+  };
+
+  // Keep admin session alive across reloads while in backoffice
+  useEffect(() => {
+    if (appView === "backoffice" && loginEmail) {
+      saveAdminSession({
+        loginEmail,
+        currentRole,
+        activeBusinessId: activeBusiness?.id || null,
+        activeTab,
+      });
+    }
+  }, [appView, loginEmail, currentRole, activeBusiness, activeTab]);
+
+  const openTenantBySlug = async (slug: string) => {
+    let tenant = tenants.find((t) => t.slug.toLowerCase() === slug.toLowerCase());
+    if (!tenant) {
+      try {
+        const res = await fetch(`/api/tenants/${slug}`);
+        const data = await res.json();
+        if (!data.error) tenant = data;
+      } catch {
+        // ignore
+      }
+    }
+    if (!tenant) return;
+    setSelectedBusiness(tenant);
+    setActiveBusiness(tenant);
+    setAppView("customer_site");
+    pushRoute(getTenantPublicPath(tenant.slug));
+    await fetchBusinessData(tenant.id);
+  };
+
+  // Pre-fill merchant login from welcome email link (?email=...)
+  useEffect(() => {
+    if (appView !== "login") return;
+    const invitedEmail = new URLSearchParams(window.location.search).get("email");
+    if (invitedEmail) {
+      setLoginTab("merchant");
+      setLoginEmail(invitedEmail);
+      setLoginError("");
+    }
+  }, [appView]);
+
+  // URL-based routing: /s/:slug, /admin, /login
+  useEffect(() => {
+    if (tenants.length === 0) return;
+
+    const route = parseAppRoute(window.location.pathname, window.location.hostname);
+    if (route.view === "tenant") {
+      openTenantBySlug(route.slug);
+      return;
+    }
+    if (route.view === "login") {
+      setAppView("login");
+      return;
+    }
+    if (route.view === "admin" && loadAdminSession()) {
+      setAppView("backoffice");
+    }
+  }, [tenants.length]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const route = parseAppRoute(window.location.pathname, window.location.hostname);
+      if (route.view === "tenant") {
+        openTenantBySlug(route.slug);
+      } else if (route.view === "admin") {
+        setAppView(loadAdminSession() ? "backoffice" : "login");
+      } else if (route.view === "login") {
+        setAppView("login");
+      } else {
+        setAppView("marketplace");
+        setSelectedBusiness(null);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [tenants]);
 
   const fetchUsers = async () => {
     try {
@@ -92,9 +231,9 @@ export default function App() {
       const data = await res.json();
       if (Array.isArray(data)) {
         setUsers(data);
-        if (data.length > 0) {
+        if (data.length > 0 && !currentUser) {
           setCurrentUser(data[0]);
-        } else {
+        } else if (data.length === 0) {
           // fallback
           const defaultAdmin: User = {
             id: "u-admin",
@@ -158,7 +297,25 @@ export default function App() {
       const data = await res.json();
       if (Array.isArray(data)) {
         setTenants(data);
-        if (data.length > 0 && !activeBusiness) {
+        const session = loadAdminSession();
+        const route = parseAppRoute(window.location.pathname, window.location.hostname);
+        if (route.view === "tenant") {
+          // Handled by URL routing effect
+        } else if (session) {
+          setAppView("backoffice");
+          setCurrentRole(session.currentRole);
+          setActiveTab(session.activeTab);
+          setLoginEmail(session.loginEmail);
+          const restoredBusiness = session.activeBusinessId
+            ? data.find((t: BusinessTenant) => t.id === session.activeBusinessId) || data[0]
+            : data[0];
+          if (restoredBusiness) {
+            setActiveBusiness(restoredBusiness);
+          }
+          if (route.view !== "marketplace") {
+            pushRoute("/admin");
+          }
+        } else if (data.length > 0 && !activeBusiness) {
           setActiveBusiness(data[0]);
         }
       }
@@ -206,65 +363,59 @@ export default function App() {
   };
 
   // Core Authentication & Booking Tracking routines
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
     const trimmedEmail = loginEmail.trim().toLowerCase();
 
-    if (!trimmedEmail) {
-      setLoginError("Please enter your registered email address.");
+    const emailError = validateEmail(trimmedEmail);
+    if (emailError) {
+      setLoginError(emailError);
       return;
     }
 
-    // 1. Check Super Admin Email (hardcoded secure value)
-    if (trimmedEmail === "markjames.villagonzalo06@gmail.com") {
-      setCurrentRole(UserRole.SUPER_ADMIN);
-      if (tenants.length > 0) {
-        setActiveBusiness(tenants[0]);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          intent: loginTab === "super_admin" ? "admin" : "merchant",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLoginError(data.error || "Login failed. Please try again.");
+        return;
       }
-      setActiveTab("dashboard");
-      setAppView("backoffice");
-      triggerToast("Access Granted!", "Logged in as Platform Super Administrator.");
-      return;
-    }
 
-    // 2. Check Business Tenants Admin emails dynamically
-    const foundBusiness = tenants.find(t => t.contactEmail.trim().toLowerCase() === trimmedEmail);
-    if (foundBusiness) {
-      setCurrentRole(UserRole.BUSINESS_ADMIN);
-      setActiveBusiness(foundBusiness);
-      setActiveTab("dashboard");
-      setAppView("backoffice");
-      triggerToast("Welcome Back!", `Successfully signed in for ${foundBusiness.name}`);
-      return;
-    }
+      setLoginEmail(trimmedEmail);
+      if (data.user) setCurrentUser(data.user);
 
-    // 3. Fallback matching user logins in db seeded users
-    const matchedUser = users.find(u => u.email.trim().toLowerCase() === trimmedEmail);
-    if (matchedUser) {
-      if (matchedUser.role === UserRole.SUPER_ADMIN) {
+      if (data.role === UserRole.SUPER_ADMIN || data.role === "SUPER_ADMIN") {
         setCurrentRole(UserRole.SUPER_ADMIN);
-        if (tenants.length > 0) {
-          setActiveBusiness(tenants[0]);
-        }
+        setActiveBusiness(data.business || tenants[0] || null);
         setActiveTab("dashboard");
         setAppView("backoffice");
-        triggerToast("Access Granted!", "Authenticated from directory ledger.");
-        return;
-      } else {
-        setCurrentRole(UserRole.BUSINESS_ADMIN);
-        const biz = tenants.find(t => t.id === matchedUser.businessId) || tenants[0];
-        if (biz) {
-          setActiveBusiness(biz);
-        }
-        setActiveTab("dashboard");
-        setAppView("backoffice");
-        triggerToast("Welcome Back!", `Inbound admin connection validated: ${matchedUser.name}`);
+        pushRoute("/admin");
+        triggerToast("Access granted", "Logged in as platform administrator.");
         return;
       }
-    }
 
-    setLoginError("Credentials do not match any registered platform administrator or active business contact email.");
+      if (data.business) {
+        setCurrentRole(UserRole.BUSINESS_ADMIN);
+        setActiveBusiness(data.business);
+        setActiveTab("dashboard");
+        setAppView("backoffice");
+        pushRoute("/admin");
+        triggerToast("Welcome back", `Signed in to ${data.business.name}`);
+        return;
+      }
+
+      setLoginError("No business workspace found for this account.");
+    } catch {
+      setLoginError("Could not reach the server. Please try again.");
+    }
   };
 
   const handleTrackBookings = async (e: React.FormEvent) => {
@@ -273,7 +424,12 @@ export default function App() {
     setHasTracked(false);
     
     const trimmed = trackEmail.trim().toLowerCase();
-    if (!trimmed) return;
+    const emailError = validateEmail(trimmed);
+    if (emailError) {
+      setTrackEmailError(emailError);
+      return;
+    }
+    setTrackEmailError("");
     
     setIsSearchingTrack(true);
     try {
@@ -309,7 +465,18 @@ export default function App() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      triggerToast("Dynamic Workspace Bootstrapped!", `Onboarded: ${data.name}`);
+      triggerToast("Workspace created", `Onboarded: ${data.name}`);
+      if (data.welcomeEmail?.success) {
+        triggerToast(
+          "Welcome email sent",
+          data.welcomeEmail.isTestMode
+            ? `Test preview: ${data.welcomeEmail.previewUrl}`
+            : `Login link sent to ${data.welcomeEmail.sentTo}`,
+          data.welcomeEmail.isTestMode ? "info" : "success"
+        );
+      } else if (data.welcomeEmail && !data.welcomeEmail.success) {
+        triggerToast("Welcome email failed", data.welcomeEmail.error || "SMTP not configured", "info");
+      }
       setOnboardingModalOpen(false);
 
       await fetchTenants();
@@ -341,6 +508,22 @@ export default function App() {
     try {
       await fetch(`/api/services/${id}`, { method: "DELETE" });
       triggerToast("Service Discontinued", "Service removed from menu");
+      reloadActiveBusinessData();
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleUpdateService = async (id: string, updates: Partial<Service>) => {
+    try {
+      const res = await fetch(`/api/services/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      triggerToast("Service Updated", "Catalog changes saved.");
       reloadActiveBusinessData();
     } catch (e: any) {
       alert(e.message);
@@ -477,9 +660,25 @@ export default function App() {
         body: JSON.stringify({ status, cancellationRemarks })
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (!res.ok || data.error) throw new Error(data.error || `Request failed (${res.status})`);
 
       triggerToast(`Appointment is now ${status.toUpperCase()}!`, `Registered under code #${data.id}`);
+
+      const email = data.emailNotification;
+      if (email) {
+        if (email.success && email.isTestMode) {
+          triggerToast(
+            "Email in Test Mode Only",
+            `SMTP not active — preview: ${email.previewUrl}`,
+            "info"
+          );
+        } else if (email.success) {
+          triggerToast("Customer Email Sent", `Gmail notification delivered to ${email.sentTo}`);
+        } else {
+          triggerToast("Customer Email Failed", email.error || "Could not send notification email", "info");
+        }
+      }
+
       reloadActiveBusinessData();
     } catch (e: any) {
       alert(e.message);
@@ -503,27 +702,43 @@ export default function App() {
 
   // 9. Booking guest confirmation submit
   const handleWizardSubmit = async (bookingDetails: any) => {
-    if (!activeBusiness) return;
+    const business = selectedBusiness || activeBusiness;
+    if (!business) return;
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...bookingDetails, businessId: activeBusiness.id })
+      body: JSON.stringify({ ...bookingDetails, businessId: business.id })
     });
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    if (!res.ok || data.error) throw new Error(data.error || `Request failed (${res.status})`);
 
-    triggerToast("SMTP Simulated Dispatch!", `Email receipt notification sent to ${bookingDetails.customerEmail}`, "info");
+    const notification = data.notification;
+    if (notification?.success && notification.isTestMode) {
+      triggerToast(
+        "Email in Test Mode Only",
+        `SMTP not active — preview: ${notification.previewUrl}`,
+        "info"
+      );
+    } else if (notification?.success) {
+      triggerToast("Booking Email Sent", `Gmail pending notice sent to ${notification.sentTo}`);
+    } else if (notification && !notification.success) {
+      triggerToast("Booking Email Failed", notification.error || "Could not send pending notice", "info");
+    } else {
+      triggerToast("Booking Created", `Pending request registered for ${bookingDetails.customerEmail}`);
+    }
+
     reloadActiveBusinessData();
     return data;
   };
 
   // 10. Public portal review dispatcher
   const handleReviewSubmissionFromCms = async (reviewData: any) => {
-    if (!activeBusiness) return;
+    const business = selectedBusiness || activeBusiness;
+    if (!business) return;
     const res = await fetch("/api/reviews", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...reviewData, businessId: activeBusiness.id })
+      body: JSON.stringify({ ...reviewData, businessId: business.id })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -538,74 +753,15 @@ export default function App() {
     return `theme-palette-${activeBusiness.theme.primaryPalette}`;
   };
 
-  const getBackofficeClasses = () => {
-    switch (backofficeColor) {
-      case "emerald":
-        return {
-          btn: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/10",
-          text: "text-emerald-400",
-          border: "border-emerald-500/20",
-          bg: "bg-emerald-500/10",
-          accent: "emerald"
-        };
-      case "amber":
-        return {
-          btn: "bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold shadow-amber-500/10",
-          text: "text-amber-400",
-          border: "border-amber-500/20",
-          bg: "bg-amber-500/10",
-          accent: "amber"
-        };
-      case "rose":
-        return {
-          btn: "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/10",
-          text: "text-rose-400",
-          border: "border-rose-500/20",
-          bg: "bg-rose-500/10",
-          accent: "rose"
-        };
-      case "violet":
-        return {
-          btn: "bg-violet-600 hover:bg-violet-500 text-white shadow-violet-500/10",
-          text: "text-violet-400",
-          border: "border-violet-500/20",
-          bg: "bg-violet-500/10",
-          accent: "violet"
-        };
-      case "sky":
-        return {
-          btn: "bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold shadow-sky-500/10",
-          text: "text-sky-400",
-          border: "border-sky-500/20",
-          bg: "bg-sky-500/10",
-          accent: "sky"
-        };
-      default: // indigo
-        return {
-          btn: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/10",
-          text: "text-indigo-400",
-          border: "border-indigo-500/20",
-          bg: "bg-indigo-500/10",
-          accent: "indigo"
-        };
-    }
+  const boCls = {
+    btn: "ui-btn-primary",
+    text: "text-zinc-700",
+    border: "border-zinc-200",
+    bg: "bg-zinc-100",
   };
 
-  const boCls = getBackofficeClasses();
-
   return (
-    <div className={`h-screen bg-[#0A0A0B] text-slate-200 select-none relative overflow-hidden flex flex-col ${getThemePaletteClass()}`}>
-      
-      {/* Background Mesh Blobs reflecting selected Backoffice Custom theme */}
-      <div className={`absolute top-[-10%] left-[-10%] w-[45%] h-[45%] rounded-full blur-[140px] pointer-events-none transition-colors duration-1000 ${
-        boCls.accent === "emerald" ? "bg-emerald-500/10" :
-        boCls.accent === "amber" ? "bg-amber-500/10" :
-        boCls.accent === "rose" ? "bg-rose-500/10" :
-        boCls.accent === "violet" ? "bg-violet-500/10" :
-        boCls.accent === "sky" ? "bg-sky-500/10" : "bg-indigo-500/10"
-      }`}></div>
-      <div className="absolute bottom-[-15%] right-[-5%] w-[40%] h-[40%] bg-emerald-500/5 rounded-full blur-[130px] pointer-events-none"></div>
-      <div className="absolute top-[40%] right-[30%] w-[35%] h-[35%] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="h-screen bg-zinc-50 text-zinc-900 relative overflow-hidden flex flex-col">
 
       {/* DISCOVERY MARKETPLACE SCREEN */}
       {appView === "marketplace" && (() => {
@@ -622,25 +778,15 @@ export default function App() {
 
         const discoveryCategories = [
           { id: "all", label: "All Services", icon: "✨" },
-          { id: "hair-salon", label: "Hair & Barber", icon: "✂️" },
-          { id: "nail-salon", label: "Nails & Glow", icon: "💅" },
-          { id: "tattoo-studio", label: "Ink & Art", icon: "🎨" },
-          { id: "makeup-artist", label: "Makeup & Style", icon: "💄" },
-          { id: "generic-coaching", label: "Wellness Clinic", icon: "🌱" }
+          ...categoryTemplates.filter((t) => t.isActive).map((t) => ({ id: t.slug, label: t.label, icon: t.icon })),
         ];
 
         return (
-          <div className="flex-1 overflow-y-auto relative z-10 flex flex-col select-text">
-            {/* Minimal Header */}
-            <header className="border-b border-white/5 bg-black/30 backdrop-blur-md px-6 py-4 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-base shadow border border-indigo-500/10">
-                  ⚡
-                </div>
-                <div>
-                  <h1 className="text-sm font-black text-white tracking-widest uppercase font-mono">UniBook</h1>
-                  <p className="text-[9px] text-indigo-400 font-bold font-mono tracking-wider -mt-0.5">Appointment Discovery Network</p>
-                </div>
+          <div className="flex-1 overflow-y-auto relative z-10 flex flex-col bg-zinc-50">
+            <header className="border-b border-zinc-200 bg-white px-6 py-4 flex items-center justify-between shrink-0">
+              <div>
+                <h1 className="text-lg font-semibold text-zinc-900">UniBook</h1>
+                <p className="text-sm text-zinc-500">Find and book local services</p>
               </div>
               <button
                 id="admin-console-signin-btn"
@@ -648,28 +794,21 @@ export default function App() {
                   setLoginEmail("");
                   setLoginError("");
                   setAppView("login");
+                  pushRoute("/login");
                 }}
-                className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white font-mono text-[10px] font-bold rounded-lg border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer"
+                className="ui-btn text-sm"
               >
                 <UserIcon className="w-3.5 h-3.5" />
                 <span>Partner Log In</span>
               </button>
             </header>
 
-            {/* Premium Typographic Hero Section */}
-            <div className="px-6 py-12 md:py-16 text-center max-w-4xl mx-auto space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/15 text-indigo-300 text-[9px] uppercase font-bold tracking-widest rounded-full font-mono">
-                <Sparkles className="w-3 h-3 text-indigo-400" />
-                <span>Next-Gen Booking Engine</span>
-              </div>
-              <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-none animate-fade-in">
-                Bespoke Services, <br />
-                <span className="bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                  Effortless Reservations.
-                </span>
+            <div className="px-6 py-10 text-center max-w-2xl mx-auto space-y-3">
+              <h2 className="text-3xl md:text-4xl font-semibold text-zinc-900 tracking-tight">
+                Book appointments online
               </h2>
-              <p className="text-xs md:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed font-light">
-                Discover elite self-care specialists nearby. Secure instant booking slots with downpayment security, trace confirmation status live, and unlock your reservation pass.
+              <p className="text-sm text-zinc-500">
+                Browse businesses, reserve a time, and get email confirmations.
               </p>
             </div>
 
@@ -680,42 +819,29 @@ export default function App() {
               <div className="lg:col-span-8 space-y-6">
                 
                 {/* Search & Filter Bar */}
-                <div className="bg-[#121216]/40 border border-white/5 rounded-2xl p-4 md:p-5 space-y-4 backdrop-blur-xl">
-                  {/* Text search input */}
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type="text"
-                      placeholder="Search providers by name, descriptions or location..."
-                      value={marketplaceSearch}
-                      onChange={(e) => setMarketplaceSearch(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                    />
-                    {marketplaceSearch && (
-                      <button
-                        onClick={() => setMarketplaceSearch("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-505 hover:text-white text-xs font-bold font-mono"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </div>
+                <div className="ui-card-pad space-y-4">
+                  <SearchInput
+                    value={marketplaceSearch}
+                    onChange={setMarketplaceSearch}
+                    placeholder="Search by name, description, or location..."
+                    clearable
+                  />
 
-                  {/* Horizontal Scrollable Category Pills */}
                   <div className="space-y-2">
-                    <p className="text-[9px] uppercase font-mono font-bold tracking-wider text-slate-400">Quick Palette Filter</p>
+                    <p className="text-xs font-medium text-zinc-500">Category</p>
                     <div className="flex flex-wrap gap-2">
                       {discoveryCategories.map((cat) => (
                         <button
                           key={cat.id}
+                          type="button"
                           onClick={() => setMarketplaceCategory(cat.id)}
-                          className={`px-3 py-1.5 text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer font-sans select-none border text-left ${
+                          className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 transition-colors border ${
                             marketplaceCategory === cat.id
-                              ? "bg-indigo-600 border-indigo-400 text-white font-bold shadow-md shadow-indigo-600/10"
-                              : "bg-white/[0.02] border-white/5 hover:border-white/10 text-slate-400 hover:text-white"
+                              ? "bg-zinc-900 border-zinc-900 text-white font-medium"
+                              : "bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50"
                           }`}
                         >
-                          <span className="text-xs">{cat.icon}</span>
+                          <span>{cat.icon}</span>
                           <span>{cat.label}</span>
                         </button>
                       ))}
@@ -725,89 +851,84 @@ export default function App() {
 
                 {/* Grid of Providers */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">
-                      Verified Service Outlets ({filteredTenants.length})
+                  <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
+                    <h3 className="text-sm font-medium text-zinc-700">
+                      Providers ({filteredTenants.length})
                     </h3>
                     {marketplaceCategory !== "all" && (
-                      <span className="text-[9px] text-[#38bdf8] uppercase font-mono font-bold">
-                        Filter: {marketplaceCategory.replace("-", " ")}
+                      <span className="ui-badge">
+                        {marketplaceCategory.replace("-", " ")}
                       </span>
                     )}
                   </div>
 
                   {filteredTenants.length === 0 ? (
-                    <div className="p-12 bg-white/[0.01] border border-dashed border-white/5 rounded-2xl text-center space-y-2">
-                      <p className="text-xs text-slate-400 italic">No registered providers match your search parameters.</p>
+                    <div className="p-12 border border-dashed border-zinc-300 rounded-lg text-center space-y-3 bg-white">
+                      <p className="text-sm text-zinc-600">No providers match your search.</p>
                       <button
+                        type="button"
                         onClick={() => {
                           setMarketplaceSearch("");
                           setMarketplaceCategory("all");
                         }}
-                        className="text-xs text-indigo-400 hover:underline font-bold"
+                        className="text-sm text-zinc-900 font-medium hover:underline"
                       >
-                        Clear Active Filters
+                        Clear filters
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {filteredTenants.map((ten) => (
                         <div
                           key={ten.id}
                           id={`tenant-card-${ten.slug}`}
-                          className="group relative p-6 bg-[#121216]/45 hover:bg-[#121216]/85 border border-white/5 hover:border-indigo-500/20 rounded-2xl flex flex-col justify-between space-y-5 transition-all duration-350 shadow-sm"
+                          className="ui-card-pad flex flex-col justify-between space-y-4 hover:border-zinc-300 transition-colors"
                         >
-                          {/* Accent Gradient Border */}
-                          <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                          <div className="space-y-3.5 relative z-10">
-                            <div className="flex justify-between items-start">
-                              <div className="w-11 h-11 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-xl shadow-inner select-none transition-transform group-hover:scale-105">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start gap-3">
+                              <div className="w-11 h-11 bg-zinc-100 rounded-lg border border-zinc-200 flex items-center justify-center text-xl shrink-0">
                                 {ten.logo}
                               </div>
                               <div className="flex flex-col items-end gap-1">
-                                <span className="text-[8px] text-[#38bdf8] uppercase font-bold tracking-widest px-2 py-0.5 rounded-md bg-sky-950/30 border border-sky-500/10 font-mono">
+                                <span className="ui-badge capitalize">
                                   {ten.templateType.replace("-", " ")}
                                 </span>
-                                <span className="text-[8px] text-emerald-400 font-bold font-mono tracking-wider flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                  ACTIVE BOOKINGS
+                                <span className="ui-badge-success text-xs flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                  Accepting bookings
                                 </span>
                               </div>
                             </div>
-                            
+
                             <div>
-                              <h4 className="text-base font-bold text-white group-hover:text-[#38bdf8] transition-colors">{ten.name}</h4>
-                              <p className="text-[9px] text-indigo-300 font-mono">https://{ten.slug}.unibook.co</p>
+                              <h4 className="text-base font-semibold text-zinc-900">{ten.name}</h4>
+                              <p className="text-xs text-zinc-500 mt-0.5">{getTenantPublicUrl(ten.slug)}</p>
                             </div>
 
-                            <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed font-light">
+                            <p className="text-sm text-zinc-600 line-clamp-3 leading-relaxed">
                               {ten.aboutText}
                             </p>
 
-                            <div className="space-y-1.5 text-[10.5px] text-slate-400 pt-2 border-t border-white/5">
+                            <div className="space-y-1.5 text-sm text-zinc-600 pt-2 border-t border-zinc-200">
                               <div className="flex items-start gap-2">
-                                <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                                <span className="leading-snug text-slate-350">{ten.contactAddress}</span>
+                                <MapPin className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
+                                <span className="leading-snug">{ten.contactAddress}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                                <span className="text-slate-350">{ten.contactPhone}</span>
+                                <Phone className="w-4 h-4 text-zinc-400 shrink-0" />
+                                <span>{ten.contactPhone}</span>
                               </div>
                             </div>
                           </div>
 
                           <button
+                            type="button"
                             id={`visit-site-${ten.slug}`}
-                            onClick={() => {
-                              setSelectedBusiness(ten);
-                              setActiveBusiness(ten);
-                              setAppView("customer_site");
-                            }}
-                            className="relative z-10 w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow transition-all group-hover:bg-indigo-500 cursor-pointer select-none font-sans"
+                            onClick={() => openTenantBySlug(ten.slug)}
+                            className="w-full ui-btn-primary"
                           >
                             <span>Book at {ten.name}</span>
-                            <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                            <ChevronRight className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
@@ -816,211 +937,134 @@ export default function App() {
                 </div>
               </div>
 
-              {/* RIGHT AREA: RESERVATION STATUS TRACKER (4 cols on lg) */}
-              <div className="lg:col-span-4 space-y-6">
-                
-                <div className="border-b border-white/5 pb-2">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">
-                    Track Reservation
-                  </h3>
-                </div>
+              {/* RIGHT AREA: BOOKING TRACKER */}
+              <div className="lg:col-span-4 space-y-4">
+                <h3 className="text-sm font-medium text-zinc-700 border-b border-zinc-200 pb-2">
+                  Track your bookings
+                </h3>
 
-                <div className="p-5 bg-[#121216]/40 border border-white/5 rounded-2xl space-y-5 backdrop-blur-xl relative">
-                  
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-indigo-400">
-                      <Info className="w-3.5 h-3.5 shrink-0" />
-                      <h4 className="text-xs font-bold text-white">Instant Search Protocol</h4>
+                <div className="ui-card-pad space-y-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-zinc-700">
+                      <Info className="w-4 h-4 shrink-0 text-zinc-500" />
+                      <h4 className="text-sm font-medium">Look up by email</h4>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-normal font-light">
-                      Input your registered customer email to instantly retrieve appointment times, schedules, assigned specialists and confirmation slips.
+                    <p className="text-sm text-zinc-600 leading-relaxed">
+                      Enter the email you used when booking to see status, date, and time.
                     </p>
                   </div>
 
-                  {/* Active Email Search Form */}
-                  <form onSubmit={handleTrackBookings} className="space-y-3 pt-1">
-                    <div className="space-y-1">
-                      <label className="text-[9px] uppercase text-slate-400 font-bold font-mono tracking-wider">Customer Email Address</label>
+                  <form onSubmit={handleTrackBookings} className="space-y-3">
+                    <div>
+                      <label htmlFor="track-appointment-email-input" className="ui-label">
+                        Email address
+                      </label>
                       <input
                         id="track-appointment-email-input"
                         type="email"
                         required
-                        placeholder="e.g. customer@example.com"
+                        placeholder={EMAIL_PLACEHOLDER}
                         value={trackEmail}
-                        onChange={(e) => setTrackEmail(e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder-slate-600 font-sans"
+                        onChange={(e) => {
+                          setTrackEmail(e.target.value);
+                          if (trackEmailError) setTrackEmailError(validateEmail(e.target.value) || "");
+                        }}
+                        onBlur={() => setTrackEmailError(validateEmail(trackEmail) || "")}
+                        className={`ui-input ${trackEmailError ? "border-red-400" : ""}`}
                       />
+                      {trackEmailError && <p className="ui-field-error">{trackEmailError}</p>}
                     </div>
-                    
+
                     <button
                       id="track-submit-btn"
                       type="submit"
                       disabled={isSearchingTrack}
-                      className="w-full h-9 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer font-sans"
+                      className="w-full ui-btn-primary disabled:opacity-50"
                     >
-                      <span>{isSearchingTrack ? "Searching Ledger..." : "Search My Bookings"}</span>
+                      {isSearchingTrack ? "Searching..." : "Find my bookings"}
                     </button>
                   </form>
 
-                  {/* High Quality Display of Tracked Appointments */}
                   {hasTracked && (
-                    <div className="pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-305">
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] uppercase font-mono font-bold text-slate-400 tracking-wider">
-                          Found slips ({trackedBookings.length})
-                        </span>
-                        {trackedBookings.length > 0 && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
-                        )}
-                      </div>
-                      
+                    <div className="pt-4 border-t border-zinc-200 space-y-3">
+                      <p className="text-sm font-medium text-zinc-700">
+                        {trackedBookings.length} booking{trackedBookings.length !== 1 ? "s" : ""} found
+                      </p>
+
                       {trackedBookings.length === 0 ? (
-                        <div className="p-6 bg-white/[0.01] border border-dashed border-white/5 rounded-xl text-center space-y-1.5">
-                          <p className="text-slate-400 text-xs font-light">No appointment records found for this email address.</p>
-                          <p className="text-[9px] text-slate-500 font-mono">Verify your email address spelling and try again.</p>
+                        <div className="p-6 border border-dashed border-zinc-300 rounded-lg text-center space-y-1 bg-zinc-50">
+                          <p className="text-sm text-zinc-600">No bookings for this email.</p>
+                          <p className="text-xs text-zinc-500">Check the spelling and try again.</p>
                         </div>
                       ) : (
-                        <div className="space-y-4 max-h-[460px] overflow-y-auto pr-1 select-text scrollbar-thin scrollbar-thumb-white/10">
+                        <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
                           {trackedBookings.map((b) => {
                             const biz = tenants.find((t) => t.id === b.businessId);
                             const bizLogo = biz?.logo || "🏢";
-                            const bizName = biz?.name || "Partner Salon";
-                            
-                            // Visual Steps Stepper Status Computations
+                            const bizName = biz?.name || "Business";
                             const isConfirmed = b.status === "confirmed";
                             const isCancelled = b.status === "cancelled";
-                            
-                            return (
-                              <div
-                                key={b.id}
-                                className="relative bg-black/40 border border-white/5 rounded-xl overflow-hidden shadow-md flex flex-col"
-                              >
-                                {/* Boarding Ticket Notch Design */}
-                                <div className="absolute top-1/2 left-0 w-2.5 h-4 bg-[#0a0a0c] rounded-r-full -translate-x-1/2 -translate-y-1/2 border-r border-[#0a0a0c]" />
-                                <div className="absolute top-1/2 right-0 w-2.5 h-4 bg-[#0a0a0c] rounded-l-full translate-x-1/2 -translate-y-1/2 border-l border-[#0a0a0c]" />
 
-                                {/* Ticket Header */}
-                                <div className="p-3 bg-white/[0.02] border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-white/[0.01] to-transparent">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm select-none shrink-0">{bizLogo}</span>
-                                    <h5 className="font-bold text-white text-[11px] truncate max-w-[130px] leading-tight select-text font-sans">
-                                      {bizName}
-                                    </h5>
+                            return (
+                              <div key={b.id} className="border border-zinc-200 rounded-lg bg-white overflow-hidden">
+                                <div className="px-4 py-3 border-b border-zinc-200 flex justify-between items-center gap-2 bg-zinc-50">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-lg shrink-0">{bizLogo}</span>
+                                    <h5 className="font-medium text-sm text-zinc-900 truncate">{bizName}</h5>
                                   </div>
                                   <span
-                                    className={`px-2 py-0.5 rounded text-[8px] uppercase font-black tracking-widest ${
+                                    className={`ui-badge shrink-0 capitalize ${
                                       isConfirmed
-                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                                        ? "ui-badge-success"
                                         : isCancelled
-                                        ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
-                                        : "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                                        ? "ui-badge-danger"
+                                        : "ui-badge-pending"
                                     }`}
                                   >
                                     {b.status}
                                   </span>
                                 </div>
 
-                                <div className="p-4 space-y-3 text-[11px]">
-                                  {/* Code Reference ID */}
-                                  <div className="flex justify-between items-center text-[9px] font-mono text-slate-500 -mt-1">
-                                    <span>ORDER REFERENCE</span>
-                                    <span className="text-indigo-400 font-bold select-all uppercase">
-                                      #{b.id.substring(0, 8).toUpperCase()}
-                                    </span>
-                                  </div>
+                                <div className="p-4 space-y-3 text-sm">
+                                  <p className="text-xs text-zinc-500">
+                                    Ref: <span className="font-mono text-zinc-700">#{b.id.substring(0, 8).toUpperCase()}</span>
+                                  </p>
 
-                                  {/* Interactive Progress Segment */}
-                                  <div className="py-2.5 px-1 bg-black/20 rounded-lg flex items-center justify-between text-[9px] font-mono border border-white/5">
-                                    {/* Stop 1 */}
-                                    <div className="flex flex-col items-center flex-1 text-center">
-                                      <div className="w-4 h-4 rounded-full bg-emerald-500/25 border border-emerald-400 text-emerald-400 flex items-center justify-center font-bold text-[8px]">
-                                        ✓
-                                      </div>
-                                      <span className="text-slate-400 mt-1 font-bold">Placed</span>
+                                  <dl className="space-y-2 text-sm">
+                                    <div className="flex justify-between gap-2">
+                                      <dt className="text-zinc-500">Customer</dt>
+                                      <dd className="font-medium text-zinc-900 truncate">{b.customerName}</dd>
                                     </div>
+                                    <div className="flex justify-between gap-2">
+                                      <dt className="text-zinc-500">Price</dt>
+                                      <dd className="font-medium text-zinc-900">₱{b.price}</dd>
+                                    </div>
+                                    <div className="flex justify-between gap-2">
+                                      <dt className="text-zinc-500">Date</dt>
+                                      <dd className="font-medium text-zinc-900">{b.date}</dd>
+                                    </div>
+                                    <div className="flex justify-between gap-2">
+                                      <dt className="text-zinc-500">Time</dt>
+                                      <dd className="font-medium text-zinc-900">{b.timeSlot}</dd>
+                                    </div>
+                                  </dl>
 
-                                    <div className={`h-[1px] flex-1 bg-white/10 ${!isCancelled ? "bg-emerald-500/30" : ""}`} />
-
-                                    {/* Stop 2 */}
-                                    <div className="flex flex-col items-center flex-1 text-center font-sans">
-                                      <div
-                                        className={`w-4 h-4 rounded-full flex items-center justify-center font-bold text-[8px] border ${
-                                          isCancelled
-                                            ? "bg-rose-500/25 border-rose-500 text-rose-400"
-                                            : isConfirmed
-                                            ? "bg-emerald-500/25 border-emerald-400 text-emerald-400"
-                                            : "bg-amber-500/25 border-amber-505 text-amber-400 animate-pulse"
-                                        }`}
-                                      >
-                                        {isCancelled ? "✗" : isConfirmed ? "✓" : "⏰"}
-                                      </div>
-                                      <span className="text-slate-400 mt-1 font-bold">Review</span>
-                                    </div>
-
-                                    <div className={`h-[1px] flex-1 bg-white/10 ${isConfirmed ? "bg-emerald-500/30" : ""}`} />
-
-                                    {/* Stop 3 */}
-                                    <div className="flex flex-col items-center flex-1 text-center">
-                                      <div
-                                        className={`w-4 h-4 rounded-full flex items-center justify-center font-bold text-[8px] border ${
-                                          isCancelled
-                                            ? "bg-rose-500/10 border-rose-500/30 text-rose-500"
-                                            : isConfirmed
-                                            ? "bg-emerald-500/25 border-emerald-400 text-emerald-400"
-                                            : "bg-white/5 border-white/10 text-slate-500"
-                                        }`}
-                                      >
-                                        {isCancelled ? "✗" : isConfirmed ? "✓" : "3"}
-                                      </div>
-                                      <span className="text-slate-400 mt-1">Ready</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Detailed Schedule info */}
-                                  <div className="space-y-1 pt-1 font-mono text-[10px]">
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-500 uppercase">Registered Customer:</span>
-                                      <span className="text-slate-300 font-bold truncate max-w-[130px]">{b.customerName}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-500 uppercase">Treatment Price:</span>
-                                      <span className="text-slate-200 font-bold">₱{b.price}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-500 uppercase">Schedule Session:</span>
-                                      <span className="text-[#38bdf8] font-bold">{b.date}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-500 uppercase">Exact Hours:</span>
-                                      <span className="text-white font-bold">{b.timeSlot}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-500 uppercase">Therapist Specialist:</span>
-                                      <span className="text-slate-300 font-bold">Specialist Assigned</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Cancellation reason detail block */}
                                   {isCancelled && b.cancellationRemarks && (
-                                    <div className="p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/20 text-rose-400 leading-normal font-sans text-[10.5px]">
-                                      <span className="font-bold block uppercase text-[8px] tracking-wide font-mono mb-1 text-rose-300">
-                                        ❌ DECLINED REMARKS
-                                      </span>
-                                      "{b.cancellationRemarks}"
+                                    <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800">
+                                      <span className="font-medium block mb-1">Declined</span>
+                                      {b.cancellationRemarks}
                                     </div>
                                   )}
 
-                                  {/* Normal helper instructions based on state */}
                                   {!isCancelled && !isConfirmed && (
-                                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/15 text-amber-300 text-[10px] leading-relaxed font-sans">
-                                      Your reservation is queued for review. If GCash downpayment of ₱300 was sent, verification is in progress.
+                                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-900">
+                                      Pending review. If you sent a GCash downpayment, verification is in progress.
                                     </div>
                                   )}
 
                                   {isConfirmed && (
-                                    <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/15 text-emerald-300 text-[10px] leading-relaxed font-sans">
-                                      ✓ Booking approved! Enjoy your session. Please arrive 10 minutes prior to your schedule.
+                                    <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-900">
+                                      Approved. Please arrive 10 minutes before your appointment.
                                     </div>
                                   )}
                                 </div>
@@ -1033,17 +1077,13 @@ export default function App() {
                   )}
 
                   {!hasTracked && (
-                    <div className="pt-6 border-t border-white/5 text-center text-slate-500 text-[11px] py-12 flex flex-col items-center justify-center space-y-2">
-                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 select-none">
+                    <div className="pt-4 border-t border-zinc-200 text-center py-8 space-y-2">
+                      <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-lg mx-auto">
                         📅
                       </div>
-                      <p className="font-light text-slate-400 font-sans">Discover your bookings instantly.</p>
-                      <p className="text-[9px] text-slate-500 max-w-[170px] mx-auto font-mono">
-                        Supports global email matching lookup.
-                      </p>
+                      <p className="text-sm text-zinc-600">Your bookings will appear here.</p>
                     </div>
                   )}
-
                 </div>
               </div>
 
@@ -1054,86 +1094,62 @@ export default function App() {
 
       {/* SECURE ADMIN LOGIN SCREEN */}
       {appView === "login" && (
-        <div className="flex-1 flex items-center justify-center p-6 relative z-10 overflow-y-auto">
-          <div className="w-full max-w-md bg-white/[0.02] border border-white/10 rounded-3xl p-8 backdrop-blur-xl shadow-2xl space-y-6">
-            <div className="text-center space-y-2">
-              <span className="text-3xl">🛡️</span>
-              <h2 className="text-xl font-bold text-white tracking-tight">Portal Authentication</h2>
-              <p className="text-xs text-slate-400">
-                Please select your workspace role to sign in to the dashboard.
-              </p>
+        <div className="flex-1 flex items-center justify-center p-6 overflow-y-auto bg-zinc-50">
+          <div className="w-full max-w-md ui-card-pad space-y-6 shadow-sm">
+            <div className="text-center space-y-1">
+              <h2 className="text-xl font-semibold text-zinc-900">Sign in</h2>
+              <p className="text-sm text-zinc-500">Access your business dashboard</p>
             </div>
 
-            {/* TAB SELECTOR */}
-            <div className="flex gap-1 p-1 bg-black/40 border border-white/5 rounded-xl">
+            <div className="flex gap-1 p-1 bg-zinc-100 rounded-lg">
               <button
                 type="button"
-                onClick={() => {
-                  setLoginTab("merchant");
-                  setLoginEmail("");
-                  setLoginError("");
-                }}
-                className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-bold uppercase transition-all font-mono tracking-wider cursor-pointer ${
-                  loginTab === "merchant" ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                onClick={() => { setLoginTab("merchant"); setLoginEmail(""); setLoginError(""); }}
+                className={`flex-1 py-2 px-2 rounded-md text-sm transition-all ${
+                  loginTab === "merchant" ? "bg-white text-zinc-900 shadow-sm font-medium" : "text-zinc-500"
                 }`}
               >
-                💼 Partner Merchant
+                Merchant
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setLoginTab("super_admin");
-                  setLoginEmail("markjames.villagonzalo06@gmail.com");
-                  setLoginError("");
-                }}
-                className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-bold uppercase transition-all font-mono tracking-wider cursor-pointer ${
-                  loginTab === "super_admin" ? "bg-purple-650 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                onClick={() => { setLoginTab("super_admin"); setLoginEmail(""); setLoginError(""); }}
+                className={`flex-1 py-2 px-2 rounded-md text-sm transition-all ${
+                  loginTab === "super_admin" ? "bg-white text-zinc-900 shadow-sm font-medium" : "text-zinc-500"
                 }`}
               >
-                🔐 System Admin
+                Admin
               </button>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
               {loginError && (
-                <div className="p-3.5 bg-rose-950/30 border border-rose-500/20 text-rose-400 text-xs rounded-xl flex items-start gap-2 animate-in fade-in">
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <p className="leading-normal">{loginError}</p>
+                  <p>{loginError}</p>
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase text-slate-400 font-bold font-mono">
-                  {loginTab === "super_admin" ? "Platform Administrator Email" : "Business Owner Email Address"}
+                <label className="ui-label">
+                  {loginTab === "super_admin" ? "Platform admin email" : "Business email"}
                 </label>
                 <input
                   id="admin-login-email-input"
                   type="email"
                   required
-                  placeholder={loginTab === "super_admin" ? "markjames.villagonzalo06@gmail.com" : "e.g. contact@business.com"}
+                  placeholder={EMAIL_PLACEHOLDER}
                   value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full bg-[#121216] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors select-text"
+                  onChange={(e) => {
+                    setLoginEmail(e.target.value);
+                    if (loginError) setLoginError(validateEmail(e.target.value) || "");
+                  }}
+                  className={`ui-input ${loginError ? "border-red-400" : ""}`}
                 />
-                {loginTab === "super_admin" ? (
-                  <p className="text-[9px] text-amber-400/80 font-mono leading-relaxed bg-amber-955/20 p-2 rounded-lg border border-amber-500/10">
-                    System admin operates global operations, tenant enrollment grids, and audit logs.
-                  </p>
-                ) : (
-                  <p className="text-[9px] text-slate-500 font-mono leading-normal">
-                    Sign in with your registered accredited merchant contact email.
-                  </p>
-                )}
               </div>
 
-              <button
-                id="admin-login-submit-btn"
-                type="submit"
-                className={`w-full py-2.5 text-white font-bold text-xs rounded-xl transition-all shadow-md cursor-pointer hover:scale-[1.01] flex items-center justify-center gap-1.5 ${
-                  loginTab === "super_admin" ? "bg-purple-600 hover:bg-purple-500" : "bg-indigo-600 hover:bg-indigo-500"
-                }`}
-              >
-                <span>Authenticate {loginTab === "super_admin" ? "System Core" : "Merchant Edge"}</span>
+              <button id="admin-login-submit-btn" type="submit" className="w-full ui-btn-primary">
+                Continue
               </button>
             </form>
 
@@ -1144,8 +1160,9 @@ export default function App() {
                   setLoginEmail("");
                   setLoginError("");
                   setAppView("marketplace");
+                  pushRoute("/");
                 }}
-                className="text-xs text-slate-400 hover:text-white font-semibold transition-colors cursor-pointer"
+                className="ui-btn-ghost text-sm"
               >
                 &larr; Back to Discovery Directory
               </button>
@@ -1156,26 +1173,26 @@ export default function App() {
 
       {/* CUSTOMIZED CUSTOMER THEMED WEBSITE PREVIEW */}
       {appView === "customer_site" && selectedBusiness && (
-        <div className="flex-1 flex flex-col relative z-20 overflow-hidden bg-[#0A0A0B]">
-          {/* Top Return Sticky Bar */}
-          <div className="bg-[#121216]/90 backdrop-blur border-b border-white/10 px-6 py-3 flex items-center justify-between shrink-0 text-xs text-slate-300 z-40">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <p className="font-mono">
-                Visiting: <span className="font-bold text-white">{selectedBusiness.name}</span>
+        <div className="flex-1 flex flex-col relative z-20 overflow-hidden bg-white">
+          {!isEmbedPreview && (
+            <div className="admin-header shrink-0">
+              <p className="text-sm text-zinc-600">
+                <span className="font-medium text-zinc-900">{selectedBusiness.name}</span>
               </p>
+              <button
+                id="exit-customer-site-btn"
+                type="button"
+                onClick={() => {
+                  setAppView("marketplace");
+                  setSelectedBusiness(null);
+                  pushRoute("/");
+                }}
+                className="ui-btn text-sm"
+              >
+                ← Back to directory
+              </button>
             </div>
-            <button
-              id="exit-customer-site-btn"
-              onClick={() => {
-                setAppView("marketplace");
-                setSelectedBusiness(null);
-              }}
-              className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 text-white border border-white/5 rounded-lg font-bold transition-all hover:scale-[1.02] cursor-pointer"
-            >
-              &larr; Exit & Return to Marketplace
-            </button>
-          </div>
+          )}
 
           <div className="flex-1 overflow-y-auto">
             <CmsWebsiteViewer
@@ -1185,9 +1202,8 @@ export default function App() {
               reviews={reviews}
               blogs={blogs}
               faqs={faqs}
-              onLaunchBooking={(selectedService) => {
-                setBookingWizardOpen(true);
-              }}
+              embedded={isEmbedPreview}
+              onLaunchBooking={(service, variant) => openBookingWizard(service, variant)}
               onSubmitReview={handleReviewSubmissionFromCms}
             />
           </div>
@@ -1196,209 +1212,184 @@ export default function App() {
 
       {/* BODY COLUMN WORKSPACE / ADMIN BACKOFFICE CONSOLE */}
       {appView === "backoffice" && (
-        <div className={`flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden relative z-10 font-choice-${adminFont} size-choice-${adminFontSize} transition-all`}>
-          
-          {/* SIDE BAR NAVIGATION */}
-          <aside className="w-full md:w-64 border-r border-white/5 bg-[#0a0b0d]/50 backdrop-blur-xl flex flex-col z-20 md:h-full overflow-hidden shrink-0">
-          <div className="p-5 border-b border-white/5 flex items-center justify-between text-xs py-4">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className={`admin-shell admin-theme-${backofficeColor} flex-1 min-h-0 font-choice-${adminFont} size-choice-${adminFontSize}`}>
+          <aside className="admin-sidebar">
+          <div className="p-4 border-b border-zinc-200">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="text-xl shrink-0">{activeBusiness?.logo || "💈"}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-extrabold text-white tracking-tight line-clamp-1 truncate select-text">
-                  {activeBusiness?.name || "Initializing..."}
+                <p className="text-sm font-semibold text-zinc-900 truncate">
+                  {activeBusiness?.name || "Loading..."}
                 </p>
-                <p className="text-[10px] text-slate-500 line-clamp-1 truncate font-mono select-text">
-                  {activeBusiness?.slug}.unibook.co
+                <p className="text-xs text-zinc-500 truncate">
+                  {activeBusiness ? getTenantPublicUrl(activeBusiness.slug) : ""}
                 </p>
               </div>
             </div>
           </div>
 
-          <nav className="flex-1 p-4 space-y-1 mt-3 text-xs overflow-y-auto">
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
             {currentRole === UserRole.SUPER_ADMIN ? (
-              // SUPERADMIN COMPONENT PATHS
-              <div className="space-y-1.5">
-                <p className="text-[10px] uppercase text-slate-500 font-bold px-3 tracking-widest mb-2 font-mono">
-                  SaaS Core Control
-                </p>
+              <div className="space-y-1">
+                <p className="sidebar-section-label">Platform</p>
                 <button
+                  type="button"
                   onClick={() => setActiveTab("dashboard")}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "dashboard" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item justify-between ${activeTab === "dashboard" ? "nav-item-active" : ""}`}
                 >
                   <div className="flex items-center gap-3">
-                    <LayoutDashboard className="w-4 h-4 text-indigo-400" />
-                    <span>Tenant Control Center</span>
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Tenants</span>
                   </div>
-                  <span className="bg-indigo-550/20 text-indigo-300 px-2 py-0.5 rounded-full text-[9px] font-bold font-mono">
-                    {tenants.length}
-                  </span>
+                  <span className="ui-badge text-xs">{tenants.length}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setActiveTab("logs")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "logs" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item ${activeTab === "logs" ? "nav-item-active" : ""}`}
                 >
-                  <History className="w-4 h-4 text-sky-400" />
-                  <span>Platform System Audits</span>
+                  <History className="w-4 h-4" />
+                  <span>Audit logs</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("templates")}
+                  className={`nav-item ${activeTab === "templates" ? "nav-item-active" : ""}`}
+                >
+                  <Layers className="w-4 h-4" />
+                  <span>Category templates</span>
                 </button>
               </div>
             ) : (
-              // MERCHANT BACKOFFICE VIEW CONSOLES
-              <div className="space-y-1.5">
-                <p className="text-[10px] uppercase text-slate-500 font-bold px-3 tracking-widest mb-2 font-mono">
-                  Merchant Console
-                </p>
-                
+              <div className="space-y-1">
+                <p className="sidebar-section-label">Overview</p>
                 <button
+                  type="button"
                   onClick={() => setActiveTab("dashboard")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "dashboard" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item ${activeTab === "dashboard" ? "nav-item-active" : ""}`}
                 >
-                  <LayoutDashboard className="w-4 h-4 text-indigo-405" />
-                  <span>Dashboard Overview</span>
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Dashboard</span>
                 </button>
-
                 <button
+                  type="button"
                   onClick={() => setActiveTab("calendar")}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "calendar" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item justify-between ${activeTab === "calendar" ? "nav-item-active" : ""}`}
                 >
                   <div className="flex items-center gap-3">
-                    <CalendarIcon className="w-4 h-4 text-emerald-400" />
-                    <span>Booking Schedule</span>
+                    <CalendarIcon className="w-4 h-4" />
+                    <span>Bookings</span>
                   </div>
                   {bookings.filter(b => b.status === "pending").length > 0 && (
-                    <span className="bg-amber-500 text-black px-2 py-0.5 rounded-full text-[9px] font-black animate-pulse">
+                    <span className="nav-count-badge">
                       {bookings.filter(b => b.status === "pending").length}
                     </span>
                   )}
                 </button>
 
+                <p className="sidebar-section-label">Manage</p>
                 <button
+                  type="button"
                   onClick={() => setActiveTab("services")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "services" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item ${activeTab === "services" ? "nav-item-active" : ""}`}
                 >
-                  <Scissors className="w-4 h-4 text-pink-400" />
-                  <span>Configure Services</span>
+                  <Scissors className="w-4 h-4" />
+                  <span>Services</span>
                 </button>
-
                 <button
+                  type="button"
                   onClick={() => setActiveTab("staff")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "staff" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item ${activeTab === "staff" ? "nav-item-active" : ""}`}
                 >
-                  <Users className="w-4 h-4 text-sky-400" />
-                  <span>Specialist Roster</span>
+                  <Users className="w-4 h-4" />
+                  <span>Staff</span>
                 </button>
-
                 <button
+                  type="button"
                   onClick={() => setActiveTab("crm")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "crm" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item ${activeTab === "crm" ? "nav-item-active" : ""}`}
                 >
-                  <UserCheck className="w-4 h-4 text-violet-405" />
-                  <span>CRM Guest Profiles</span>
+                  <UserCheck className="w-4 h-4" />
+                  <span>Customers</span>
                 </button>
 
+                <p className="sidebar-section-label">Website</p>
                 <button
+                  type="button"
                   onClick={() => setActiveTab("cms")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "cms" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item ${activeTab === "cms" ? "nav-item-active" : ""}`}
                 >
-                  <Globe className="w-4 h-4 text-emerald-405" />
-                  <span>Website CMS Customizer</span>
+                  <Globe className="w-4 h-4" />
+                  <span>Customize site</span>
                 </button>
-
                 <button
+                  type="button"
                   onClick={() => setActiveTab("emails")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "emails" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item ${activeTab === "emails" ? "nav-item-active" : ""}`}
                 >
-                  <Mail className="w-4 h-4 text-yellow-500" />
-                  <span>Simulated workflows</span>
+                  <Mail className="w-4 h-4" />
+                  <span>Email workflows</span>
                 </button>
 
+                <p className="sidebar-section-label">Account</p>
                 <button
+                  type="button"
                   onClick={() => setActiveTab("profile")}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
-                    activeTab === "profile" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`nav-item ${activeTab === "profile" ? "nav-item-active" : ""}`}
                 >
-                  <UserIcon className={`w-4 h-4 ${boCls.text}`} />
-                  <span>Personal Profile Settings</span>
+                  <UserIcon className="w-4 h-4" />
+                  <span>Profile</span>
                 </button>
               </div>
             )}
           </nav>
 
-          {/* Logout Action Button */}
-          <div className="p-4 border-t border-white/5 bg-black/10">
+          <div className="p-3 border-t border-zinc-200">
             <button
+              type="button"
               id="exit-console-sidebar-btn"
               onClick={() => {
+                clearAdminSession();
                 setAppView("marketplace");
                 setLoginEmail("");
                 setLoginError("");
+                pushRoute("/");
                 triggerToast("Signed Out", "You have successfully signed out of the workspace.");
               }}
-              className="w-full px-3 py-2 bg-rose-950/20 hover:bg-rose-950/40 text-rose-400 border border-rose-500/10 rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="w-full ui-btn text-sm text-red-700 border-red-200 hover:bg-red-50"
             >
-              <LogOut className="w-3.5 h-3.5 text-rose-450" />
-              <span>Exit Console</span>
+              <LogOut className="w-4 h-4" />
+              <span>Sign out</span>
             </button>
           </div>
 
-          {/* Core server stats footer block */}
-          <div className="p-4 mt-auto border-t border-white/5 bg-black/20 select-none">
-            <div className="flex items-center gap-2.5">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+          <div className="p-3 border-t border-zinc-200 bg-zinc-50">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
               <div>
-                <span className="text-[10px] text-slate-350 font-extrabold uppercase block tracking-wider">Dynamic Sandbox Sync</span>
-                <span className="text-[9px] text-slate-500 font-mono block">FS SQLite DB active</span>
+                <p className="text-xs font-medium text-zinc-700">Connected</p>
+                <p className="text-xs text-zinc-500">Local database</p>
               </div>
             </div>
           </div>
         </aside>
 
-        {/* WORKSPACE MAIN LAYOUT PANEL */}
-        <main className="flex-1 flex flex-col min-h-0 relative select-text h-full overflow-hidden">
-          
-          {/* Backoffice Toolbar Header */}
-          <header className="h-16 border-b border-white/5 bg-[#0d0f13]/65 backdrop-blur-md flex items-center justify-between px-6 md:px-8 shrink-0">
+        <main className="admin-main">
+          <header className="admin-header">
+            <h1 className="text-sm font-medium text-zinc-900 capitalize">
+              {activeTab.replace("_", " ")}
+              {currentRole === UserRole.SUPER_ADMIN ? " · Admin" : activeBusiness ? ` · ${activeBusiness.name}` : ""}
+            </h1>
             <div className="flex items-center gap-2">
-              <h1 className="text-xs font-black tracking-widest text-[#38bdf8] uppercase font-mono">
-                {activeTab.replace("_", " ")} Workspace / {currentRole === UserRole.SUPER_ADMIN ? "Super Control" : activeBusiness?.name}
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0">
               {currentRole === UserRole.BUSINESS_ADMIN && (
-                <button
-                  onClick={() => setBookingWizardOpen(true)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] transition-all"
-                >
-                  <Plus className="w-4 h-4" /> Book Appointment
+                <button type="button" onClick={() => openBookingWizard()} className="ui-btn-primary text-sm">
+                  <Plus className="w-4 h-4" /> New booking
                 </button>
               )}
-              <div className="w-9 h-9 border border-white/10 bg-white/5 rounded-full flex items-center justify-center text-slate-300">
-                <Info className="w-4.5 h-4.5 text-slate-500" />
-              </div>
             </div>
           </header>
 
-          {/* Dynamic Scrollable Working Canvas */}
-          <div className="p-6 md:p-8 flex-1 overflow-y-auto max-w-7xl w-full mx-auto space-y-6">
+          <div className="admin-content max-w-6xl w-full mx-auto space-y-6">
             
             {/* 1. SUPER ADMIN ROOT DASHBOARD */}
             {currentRole === UserRole.SUPER_ADMIN && activeTab === "dashboard" && (
@@ -1419,6 +1410,14 @@ export default function App() {
               <AuditLogsManager
                 auditLogs={auditLogs}
                 fetchAuditLogs={fetchAuditLogs}
+              />
+            )}
+
+            {currentRole === UserRole.SUPER_ADMIN && activeTab === "templates" && (
+              <CategoryTemplateManager
+                templates={categoryTemplates.length ? categoryTemplates : []}
+                onRefresh={fetchCategoryTemplates}
+                triggerToast={triggerToast}
               />
             )}
 
@@ -1453,7 +1452,9 @@ export default function App() {
                 services={services}
                 activeBusiness={activeBusiness}
                 staff={staff}
+                categoryTemplates={categoryTemplates}
                 handleCreateService={handleCreateService}
+                handleUpdateService={handleUpdateService}
                 handleDeleteService={handleDeleteService}
                 handleUpdateCmsSettings={handleUpdateCmsSettings}
                 handleUpdateServiceStatus={handleUpdateServiceStatus}
@@ -1529,143 +1530,53 @@ export default function App() {
         <OnboardingModal
           onClose={() => setOnboardingModalOpen(false)}
           onSubmit={handleOnboardTenant}
+          categoryTemplates={categoryTemplates}
         />
       )}
 
       {/* B. BACKOFFICE RESERVATIONS WIZARD MODAL */}
-      {bookingWizardOpen && activeBusiness && (
+      {bookingWizardOpen && (selectedBusiness || activeBusiness) && (
         <BookingWizard
-          business={activeBusiness}
+          business={(selectedBusiness || activeBusiness)!}
           services={services}
           staffList={staff}
           bookings={bookings}
-          onClose={() => setBookingWizardOpen(false)}
+          preSelectedService={wizardPreselect?.service}
+          preSelectedVariant={wizardPreselect?.variant}
+          onClose={() => {
+            setBookingWizardOpen(false);
+            setWizardPreselect(null);
+          }}
           onSubmit={handleWizardSubmit}
         />
       )}
 
-      {/* C. VISITOR WEBSITE PREVIEW MODAL IFRAME SIMU */}
       {cmsPreviewOpen && activeBusiness && (
-        <div className="fixed inset-0 bg-[#060708] z-50 overflow-y-auto flex flex-col select-text leading-relaxed">
-          {/* Preview simulation control top bar */}
-          <div className="bg-[#121216] border-b border-white/10 p-3.5 flex flex-col md:flex-row items-center justify-between text-xs px-6 md:px-8 shrink-0 gap-3">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000"></span>
-              <div>
-                <p className="text-white font-mono font-bold">
-                  CMS Multi-Brand Simulator Mode:{" "}
-                  <span className="text-indigo-400 select-all underline">https://{activeBusiness.slug}.unibook.co</span>
-                </p>
-                <p className="text-[10px] text-slate-450">Simulate viewport responsiveness on mobile, tablet, and desktop brands instantly.</p>
-              </div>
+        <div className="fixed inset-0 z-50 bg-zinc-900/30 flex flex-col">
+          <div className="h-14 bg-white border-b border-zinc-200 px-4 md:px-6 flex items-center justify-between gap-4 shrink-0">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-zinc-900">Site preview</p>
+              <p className="text-xs text-zinc-500 truncate">{getTenantPublicUrl(activeBusiness.slug)}</p>
             </div>
-
-            {/* Devices brand preset switcher */}
-            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 px-2 py-1 bg-black/40 border border-white/5 rounded-xl text-[11px]">
-              <button
-                onClick={() => setSimDevice("desktop")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
-                  simDevice === "desktop" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:text-white"
-                }`}
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={getTenantPublicUrl(activeBusiness.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ui-btn text-sm"
               >
-                <Monitor className="w-3.5 h-3.5" /> Fluid Desktop
+                Open in new tab
+              </a>
+              <button id="cms-preview-close" type="button" onClick={() => setCmsPreviewOpen(false)} className="ui-btn-primary text-sm">
+                Close
               </button>
-
-              <button
-                onClick={() => setSimDevice("iphone")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
-                  simDevice === "iphone" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5 text-indigo-400" /> iPhone 15 Pro
-              </button>
-
-              <button
-                onClick={() => setSimDevice("samsung")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
-                  simDevice === "samsung" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5 text-emerald-400" /> Galaxy S23
-              </button>
-
-              <button
-                onClick={() => setSimDevice("pixel")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
-                  simDevice === "pixel" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5 text-sky-400" /> Google Pixel 8
-              </button>
-
-              <button
-                onClick={() => setSimDevice("ipad-pro")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
-                  simDevice === "ipad-pro" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <Tablet className="w-3.5 h-3.5 text-violet-400" /> iPad Pro 11"
-              </button>
-
-              <button
-                onClick={() => setSimDevice("ipad-mini")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
-                  simDevice === "ipad-mini" ? "bg-white/10 text-white font-bold" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <Tablet className="w-3.5 h-3.5 text-amber-400" /> iPad Mini
-              </button>
-            </div>
-
-            <button
-              id="cms-preview-close"
-              onClick={() => setCmsPreviewOpen(false)}
-              className="px-4 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 rounded-xl font-bold cursor-pointer transition-colors whitespace-nowrap self-stretch md:self-auto flex items-center justify-center"
-            >
-              🔐 Close Simulator
-            </button>
-          </div>
-
-          <div className="flex-1 bg-[#090a0c] overflow-y-auto p-2 md:p-6 flex flex-col items-center justify-start select-text relative">
-            
-            {/* Ambient Background Glow for simulated viewport canvas */}
-            <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[60%] h-[60%] bg-indigo-550/5 rounded-full blur-[140px] pointer-events-none"></div>
-
-            {/* Device-specific outer frame decoration */}
-            <div className={`transition-all duration-300 relative select-text ${
-              simDevice === "iphone" ? "w-[393px] h-[852px] border-[12px] border-slate-800 rounded-[52px] shadow-2xl relative bg-[#0e0f13] overflow-y-auto scrollbar-thin overflow-x-hidden my-4 ring-4 ring-white/5" :
-              simDevice === "samsung" ? "w-[360px] h-[800px] border-[10px] border-neutral-800 rounded-[38px] shadow-2xl relative bg-[#0e0f13] overflow-y-auto scrollbar-thin overflow-x-hidden my-4 ring-4 ring-white/5" :
-              simDevice === "pixel" ? "w-[412px] h-[915px] border-[11px] border-zinc-900 rounded-[44px] shadow-2xl relative bg-[#0e0f13] overflow-y-auto scrollbar-thin overflow-x-hidden my-4 ring-4 ring-white/5" :
-              simDevice === "ipad-pro" ? "w-[834px] h-[1050px] border-[16px] border-neutral-800 rounded-[32px] shadow-2xl relative bg-[#0e0f13] overflow-y-auto scrollbar-thin overflow-x-hidden my-4 ring-4 ring-white/5" :
-              simDevice === "ipad-mini" ? "w-[768px] h-[960px] border-[14px] border-slate-800 rounded-[28px] shadow-2xl relative bg-[#0e0f13] overflow-y-auto scrollbar-thin overflow-x-hidden my-4 ring-4 ring-white/5" :
-              "w-full min-h-screen"
-            }`}>
-              
-              {/* iPhone Dynamic Island Mock notch cutout */}
-              {simDevice === "iphone" && (
-                <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-5.5 bg-black rounded-full z-40 hidden md:block border border-white/5 pointer-events-none"></div>
-              )}
-              
-              {/* Samsung / Pixel punchhole cameras cutout */}
-              {(simDevice === "samsung" || simDevice === "pixel") && (
-                <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-black rounded-full z-40 hidden md:block border border-white/5 pointer-events-none"></div>
-              )}
-
-              <CmsWebsiteViewer
-                business={activeBusiness}
-                services={services}
-                staffList={staff}
-                reviews={reviews}
-                blogs={blogs}
-                faqs={faqs}
-                onLaunchBooking={(selectedService) => {
-                  setCmsPreviewOpen(false);
-                  setBookingWizardOpen(true);
-                }}
-                onSubmitReview={handleReviewSubmissionFromCms}
-              />
             </div>
           </div>
+          <iframe
+            title="Live site preview"
+            src={`${getTenantPublicPath(activeBusiness.slug)}?preview=1`}
+            className="flex-1 w-full border-0 bg-white"
+          />
         </div>
       )}
 

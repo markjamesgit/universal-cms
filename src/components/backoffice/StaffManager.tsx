@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trash2, Users, Sparkles, UserCheck } from "lucide-react";
+import { Trash2, Users } from "lucide-react";
 import { Staff, Booking, BusinessTenant } from "../../types";
 
 interface StaffManagerProps {
@@ -10,10 +10,7 @@ interface StaffManagerProps {
     name: string;
     photo: string;
     position: string;
-    workingHours: {
-      start: string;
-      end: string;
-    };
+    workingHours: { start: string; end: string };
   }) => Promise<void>;
   handleDeleteStaff: (id: string) => void;
   handleUpdateStaffAvailability: (id: string, available: boolean) => void;
@@ -32,10 +29,7 @@ export default function StaffManager({
     name: "",
     photo: "",
     position: "",
-    workingHours: {
-      start: "09:00",
-      end: "18:00",
-    },
+    workingHours: { start: "09:00", end: "18:00" },
   });
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -46,16 +40,7 @@ export default function StaffManager({
     }
     try {
       await handleCreateStaff(e, form);
-      // Reset form
-      setForm({
-        name: "",
-        photo: "",
-        position: "",
-        workingHours: {
-          start: "09:00",
-          end: "18:00",
-        },
-      });
+      setForm({ name: "", photo: "", position: "", workingHours: { start: "09:00", end: "18:00" } });
       setFormOpen(false);
     } catch (err: any) {
       alert("Failed enrolling specialist: " + err.message);
@@ -63,111 +48,89 @@ export default function StaffManager({
   };
 
   return (
-    <div className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-white/5 pb-4">
+    <div className="ui-card-pad space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-zinc-200 pb-4">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-sky-400" />
+          <h2 className="ui-heading flex items-center gap-2">
+            <Users className="w-5 h-5 text-zinc-600" />
             Manage Specialist Roster
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Enroll specialists, edit profile ratings, operational shift timings, and monitor active booking workloads.
+          <p className="ui-subtext mt-1">
+            Enroll specialists, edit shift timings, and monitor active booking workloads.
           </p>
         </div>
-        <button
-          onClick={() => setFormOpen(!formOpen)}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-center font-sans"
-        >
-          {formOpen ? "Close Panel" : "Enlist Specialist"}
+        <button onClick={() => setFormOpen(!formOpen)} className="ui-btn-primary text-xs self-start sm:self-center">
+          {formOpen ? "Close Panel" : "Add Specialist"}
         </button>
       </div>
 
       {formOpen && (
-        <form onSubmit={onSubmit} className="bg-white/5 p-6 border border-white/10 rounded-2xl max-w-xl space-y-4">
-          <h3 className="text-xs font-bold text-slate-350 uppercase tracking-widest font-mono flex items-center gap-1.5">
-            Specialist Enrollment Profile
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <form onSubmit={onSubmit} className="bg-zinc-50 p-6 border border-zinc-200 rounded-lg max-w-xl space-y-4">
+          <h3 className="font-medium text-zinc-900 text-sm">Specialist Enrollment</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-slate-400 font-semibold">Full Specialist Name *</label>
+              <label className="ui-label">Full Name *</label>
               <input
                 type="text"
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="e.g. Tiffany Vance"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="ui-input"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-slate-400 font-semibold">Title / Position *</label>
+              <label className="ui-label">Title / Position *</label>
               <input
                 type="text"
                 required
                 value={form.position}
                 onChange={(e) => setForm({ ...form, position: e.target.value })}
-                placeholder="e.g. Master Botanical Aromatherapist"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                placeholder="e.g. Master Stylist"
+                className="ui-input"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-slate-400 font-semibold">Shift Starts At (HH:MM)</label>
+              <label className="ui-label">Shift Starts (HH:MM)</label>
               <input
                 type="text"
                 required
                 value={form.workingHours.start}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    workingHours: { ...form.workingHours, start: e.target.value },
-                  })
-                }
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white font-mono"
+                onChange={(e) => setForm({ ...form, workingHours: { ...form.workingHours, start: e.target.value } })}
+                className="ui-input"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-slate-400 font-semibold">Shift Ends At (HH:MM)</label>
+              <label className="ui-label">Shift Ends (HH:MM)</label>
               <input
                 type="text"
                 required
                 value={form.workingHours.end}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    workingHours: { ...form.workingHours, end: e.target.value },
-                  })
-                }
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white font-mono"
+                onChange={(e) => setForm({ ...form, workingHours: { ...form.workingHours, end: e.target.value } })}
+                className="ui-input"
               />
             </div>
           </div>
-
-          <div className="space-y-1 text-xs">
-            <label className="text-slate-400 font-semibold">Profile Photo URL</label>
+          <div className="space-y-1">
+            <label className="ui-label">Profile Photo URL</label>
             <input
               type="url"
               value={form.photo}
               onChange={(e) => setForm({ ...form, photo: e.target.value })}
               placeholder="e.g. https://images.unsplash.com/photo-..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white font-mono focus:outline-none"
+              className="ui-input"
             />
           </div>
-
-          <button
-            type="submit"
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-md cursor-pointer"
-          >
+          <button type="submit" className="ui-btn-primary">
             Enlist Specialist
           </button>
         </form>
       )}
 
-      {/* Staff Cards Lists Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {staff.length === 0 ? (
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 p-12 text-center text-slate-500 text-xs italic border border-dashed border-white/10 rounded-2xl">
-            Roster is empty. Tap the "Enlist Specialist" button above to register team members.
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 p-12 text-center text-sm text-zinc-500 border border-dashed border-zinc-200 rounded-lg">
+            Roster is empty. Tap "Add Specialist" to register team members.
           </div>
         ) : (
           staff.map((st) => {
@@ -177,48 +140,42 @@ export default function StaffManager({
             return (
               <div
                 key={st.id}
-                className="p-5 bg-white/[0.01] border border-white/5 hover:border-white/10 rounded-2xl relative block transition-all"
+                className="p-5 bg-white border border-zinc-200 rounded-lg relative transition-colors hover:border-zinc-300"
               >
                 <div className="flex items-center gap-4">
                   <img
                     src={st.photo || undefined}
                     alt={st.name}
                     referrerPolicy="no-referrer"
-                    className="w-16 h-16 rounded-full object-cover border-2 border-indigo-500/20 shadow-md shrink-0"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-zinc-200 shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-extrabold text-white text-md tracking-tight leading-snug truncate">
-                      {st.name}
-                    </h4>
-                    <p className="text-xs text-slate-400 leading-tight mt-1 truncate">{st.position}</p>
-                    <div className="flex items-center gap-1 mt-1.5 text-xs text-yellow-500 font-semibold font-mono">
+                    <h4 className="font-medium text-zinc-900 truncate">{st.name}</h4>
+                    <p className="text-sm text-zinc-500 truncate mt-0.5">{st.position}</p>
+                    <div className="flex items-center gap-1 mt-1 text-sm text-zinc-600">
                       <span>★</span>
                       <span>{st.rating.toFixed(2)} rating</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-white/5 space-y-2 text-xs text-slate-400 font-mono">
+                <div className="mt-4 pt-4 border-t border-zinc-200 space-y-2 text-sm text-zinc-500">
                   <p className="flex justify-between">
-                    <span>Shift Hours:</span>{" "}
-                    <strong className="text-slate-200">
-                      {st.workingHours.start} - {st.workingHours.end}
-                    </strong>
+                    <span>Shift Hours</span>
+                    <strong className="text-zinc-900">{st.workingHours.start} - {st.workingHours.end}</strong>
                   </p>
                   <p className="flex justify-between">
-                    <span>Active Appointments:</span>{" "}
-                    <strong className="text-indigo-400">{activeApptsCount} sessions</strong>
+                    <span>Active Appointments</span>
+                    <strong className="text-zinc-900">{activeApptsCount} sessions</strong>
                   </p>
-                  <div className="flex justify-between items-center bg-white/[0.02] p-1.5 px-2 rounded-lg mt-1 border border-white/5">
-                    <span>Availability Status:</span>{" "}
+                  <div className="flex justify-between items-center bg-zinc-50 p-2 rounded-lg border border-zinc-200">
+                    <span className="text-xs">Availability</span>
                     <div className="flex gap-1">
                       <button
                         type="button"
                         onClick={() => handleUpdateStaffAvailability(st.id, true)}
-                        className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold transition-all cursor-pointer ${
-                          st.available !== false
-                            ? "bg-emerald-600 text-white border border-emerald-500 shadow-sm font-extrabold"
-                            : "bg-white/5 border border-white/5 text-slate-400 hover:text-white"
+                        className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                          st.available !== false ? "ui-badge ui-badge-success" : "ui-badge"
                         }`}
                       >
                         Active
@@ -226,10 +183,8 @@ export default function StaffManager({
                       <button
                         type="button"
                         onClick={() => handleUpdateStaffAvailability(st.id, false)}
-                        className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold transition-all cursor-pointer ${
-                          st.available === false
-                            ? "bg-rose-600 text-white border border-rose-500 shadow-sm font-extrabold"
-                            : "bg-white/5 border border-white/5 text-slate-400 hover:text-white"
+                        className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                          st.available === false ? "ui-badge ui-badge-danger" : "ui-badge"
                         }`}
                       >
                         Inactive
@@ -241,10 +196,10 @@ export default function StaffManager({
                 <div className="absolute top-4 right-4">
                   <button
                     onClick={() => handleDeleteStaff(st.id)}
-                    className="p-1 text-slate-500 hover:text-red-400 hover:bg-white/5 rounded transition-colors"
+                    className="ui-btn-ghost p-1 text-red-600"
                     title="Remove Specialist"
                   >
-                    <Trash2 className="w-4 h-4 text-rose-450" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
