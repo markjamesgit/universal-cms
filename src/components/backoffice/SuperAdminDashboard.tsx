@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Globe, MapPin, RefreshCw, PlusCircle, History } from "lucide-react";
-import { BusinessTenant, AuditLog, UserRole } from "../../types";
+import { BusinessTenant, AuditLog } from "../../types";
 import { getTenantPublicUrl } from "../../lib/tenantUrl";
 import PaginationBar from "../ui/PaginationBar";
 
@@ -11,8 +11,7 @@ interface SuperAdminDashboardProps {
   auditLogs: AuditLog[];
   fetchAuditLogs: () => void;
   setOnboardingModalOpen: (open: boolean) => void;
-  setCurrentRole: (role: UserRole) => void;
-  setActiveTab: (tab: any) => void;
+  onManageTenant: (tenant: BusinessTenant) => void;
 }
 
 export default function SuperAdminDashboard({
@@ -22,8 +21,7 @@ export default function SuperAdminDashboard({
   auditLogs,
   fetchAuditLogs,
   setOnboardingModalOpen,
-  setCurrentRole,
-  setActiveTab,
+  onManageTenant,
 }: SuperAdminDashboardProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 3;
@@ -112,9 +110,7 @@ export default function SuperAdminDashboard({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveBusiness(ten);
-                      setCurrentRole(UserRole.BUSINESS_ADMIN);
-                      setActiveTab("dashboard");
+                      onManageTenant(ten);
                     }}
                     className="ui-btn-ghost text-xs"
                   >

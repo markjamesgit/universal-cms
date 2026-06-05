@@ -72,6 +72,12 @@ export default function OnboardingModal({ categoryTemplates = [], onClose, onSub
       alert("Tenant name and website slug are mandatory.");
       return;
     }
+    const emailError = validateEmail(form.contactEmail);
+    if (emailError) {
+      setFieldErrors((prev) => ({ ...prev, contactEmail: emailError }));
+      alert("Contact email is required. Merchants sign in with this exact address.");
+      return;
+    }
     setLoading(true);
     try {
       await onSubmit(form);
@@ -221,9 +227,10 @@ export default function OnboardingModal({ categoryTemplates = [], onClose, onSub
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="ui-label">Contact Email</label>
+              <label className="ui-label">Contact Email *</label>
               <input
                 type="email"
+                required
                 value={form.contactEmail}
                 onChange={(e) => {
                   setForm({ ...form, contactEmail: e.target.value });
@@ -238,6 +245,9 @@ export default function OnboardingModal({ categoryTemplates = [], onClose, onSub
                 className={`ui-input ${fieldErrors.contactEmail ? "border-red-400" : ""}`}
               />
               {fieldErrors.contactEmail && <p className="ui-field-error">{fieldErrors.contactEmail}</p>}
+              <p className="text-xs text-zinc-500 mt-1">
+                Merchant login uses this email — use a real inbox the owner can access.
+              </p>
             </div>
             <div className="space-y-1">
               <label className="ui-label">Contact Phone</label>

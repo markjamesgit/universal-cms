@@ -3,7 +3,7 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { dbInstance } from "./server/db";
+import { dbInstance, dbReady } from "./server/db";
 import { sendRealEmail, logSmtpStatus, sendMerchantWelcomeEmail, loadEnv } from "./server/email";
 import { buildMerchantLoginUrl, buildTenantSiteUrl } from "./server/urls";
 
@@ -14,6 +14,7 @@ let cachedApp: express.Express | null = null;
 async function buildApp(): Promise<express.Express> {
   logSmtpStatus();
   loadEnv();
+  await dbReady;
   const superAdminConfigured = Boolean(process.env.SUPER_ADMIN_EMAIL?.trim());
   console.log(`[AUTH] Super admin email configured: ${superAdminConfigured ? "yes" : "no (set SUPER_ADMIN_EMAIL in .env)"}`);
 
@@ -30,7 +31,7 @@ async function buildApp(): Promise<express.Express> {
 
   // --- API ROUTE SYSTEM ---
 
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       loadEnv();
       const email = String(req.body.email || "").trim().toLowerCase();
@@ -60,15 +61,13 @@ async function buildApp(): Promise<express.Express> {
         });
       }
 
-      const business = dbInstance.getBusinesses().find(
-        (t) => t.contactEmail.trim().toLowerCase() === email
-      );
+      const business = dbInstance.getBusinessByContactEmail(email);
       if (business) {
-        const user = dbInstance.getUserByEmail(email);
+        const user = dbInstance.getUserByEmail(email) || await dbInstance.ensureMerchantUser(business);
         return res.json({
           role: "BUSINESS_ADMIN",
           business,
-          user: user || null,
+          user,
         });
       }
 
@@ -143,7 +142,12 @@ async function buildApp(): Promise<express.Express> {
         return res.status(400).json({ error: "This subdomain handle is already taken by another merchant." });
       }
 
-      const newTenant = dbInstance.createBusiness({
+      const normalizedContactEmail = String(contactEmail || "").trim().toLowerCase();
+      if (!normalizedContactEmail) {
+        return res.status(400).json({ error: "Contact email is required — merchants log in with this exact address." });
+      }
+
+      const newTenant = await dbInstance.createBusiness({
         name,
         slug: slug.toLowerCase().replace(/[^a-z0-9-_]/g, ""),
         logo: req.body.logo || "🏢",
@@ -151,15 +155,16 @@ async function buildApp(): Promise<express.Express> {
         heroHeading: heroHeading || `Welcome to ${name}`,
         heroSubheading: heroSubheading || "The ultimate bespoke experience customized just for you.",
         aboutText: aboutText || `${name} provides master craftsmanship and focused service.`,
-        contactEmail: contactEmail || `hello@${slug}.com`,
+        contactEmail: normalizedContactEmail,
         contactPhone: contactPhone || "+1 (555) 000-0000",
         contactAddress: contactAddress || "101 Grand Avenue",
         theme: theme || { primaryPalette: "neutral", fontFamily: "sans", bannerStyle: "minimal", buttonStyle: "rounded" },
         seo: seo || { metaTitle: `${name} | Book Specialist Appointments`, metaDescription: `Schedule online services with ${name}.`, ogImage: "" }
       });
 
-      // Log action
-      dbInstance.addAuditLog("SaaS Onboarding Manager", "CREATE_TENANT", `Successfully onboarded and provisioned tenant ${newTenant.name} (${newTenant.slug})`);
+      const merchantUser = await dbInstance.ensureMerchantUser(newTenant);
+
+      dbInstance.addAuditLog("SaaS Onboarding Manager", "CREATE_TENANT", `Successfully onboarded and provisioned tenant ${newTenant.name} (${newTenant.slug}) for ${newTenant.contactEmail}`);
 
       const merchantEmail = newTenant.contactEmail.trim();
       const siteUrl = buildTenantSiteUrl(newTenant.slug);
@@ -191,7 +196,7 @@ async function buildApp(): Promise<express.Express> {
         }
       }
 
-      res.json({ ...newTenant, welcomeEmail });
+      res.json({ ...newTenant, merchantUser, welcomeEmail });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

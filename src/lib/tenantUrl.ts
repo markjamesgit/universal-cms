@@ -34,7 +34,10 @@ export function shouldUseTenantSubdomains(hostname?: string): boolean {
   if (typeof window === "undefined") return false;
   const host = hostname || window.location.hostname;
   if (host.includes("localhost") || host.startsWith("127.")) return false;
-  return host.includes(".vercel.app") || host.split(".").length >= 3;
+  // *.vercel.app subdomains are not supported unless you add a wildcard domain in Vercel.
+  if (host.endsWith(".vercel.app")) return false;
+  // Custom domains: enable slug.example.com when host has a subdomain already or env is set.
+  return host.split(".").length >= 3;
 }
 
 export function getTenantPublicUrl(slug: string): string {

@@ -270,21 +270,31 @@ export default function App() {
     }
   };
 
+  const clearBusinessData = () => {
+    setServices([]);
+    setStaff([]);
+    setBookings([]);
+    setCustomers([]);
+    setReviews([]);
+    setBlogs([]);
+    setFaqs([]);
+    setEmailTemplates([]);
+  };
+
+  const parseArrayResponse = async (res: Response) => {
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  };
+
   // When active tenant shifts, sync appropriate sub-datasets
   useEffect(() => {
-    if (activeBusiness) {
+    if (activeBusiness?.id) {
+      clearBusinessData();
       fetchBusinessData(activeBusiness.id);
     } else {
-      setServices([]);
-      setStaff([]);
-      setBookings([]);
-      setCustomers([]);
-      setReviews([]);
-      setBlogs([]);
-      setFaqs([]);
-      setEmailTemplates([]);
+      clearBusinessData();
     }
-  }, [activeBusiness]);
+  }, [activeBusiness?.id]);
 
   const triggerToast = (message: string, submessage?: string, type: "success" | "info" = "success") => {
     setNotificationToast({ message, submessage, type });
@@ -337,29 +347,43 @@ export default function App() {
   };
 
   const fetchBusinessData = async (businessId: string) => {
+    if (!businessId?.trim()) {
+      clearBusinessData();
+      return;
+    }
     try {
+      const encodedId = encodeURIComponent(businessId);
       const [srvRes, stfRes, bkRes, custRes, revRes, blgRes, faqRes, tempRes] = await Promise.all([
-        fetch(`/api/services?businessId=${businessId}`),
-        fetch(`/api/staff?businessId=${businessId}`),
-        fetch(`/api/bookings?businessId=${businessId}`),
-        fetch(`/api/customers?businessId=${businessId}`),
-        fetch(`/api/reviews?businessId=${businessId}`),
-        fetch(`/api/blogs?businessId=${businessId}`),
-        fetch(`/api/faqs?businessId=${businessId}`),
-        fetch(`/api/email-templates?businessId=${businessId}`)
+        fetch(`/api/services?businessId=${encodedId}`),
+        fetch(`/api/staff?businessId=${encodedId}`),
+        fetch(`/api/bookings?businessId=${encodedId}`),
+        fetch(`/api/customers?businessId=${encodedId}`),
+        fetch(`/api/reviews?businessId=${encodedId}`),
+        fetch(`/api/blogs?businessId=${encodedId}`),
+        fetch(`/api/faqs?businessId=${encodedId}`),
+        fetch(`/api/email-templates?businessId=${encodedId}`)
       ]);
 
-      setServices(await srvRes.json() || []);
-      setStaff(await stfRes.json() || []);
-      setBookings(await bkRes.json() || []);
-      setCustomers(await custRes.json() || []);
-      setReviews(await revRes.json() || []);
-      setBlogs(await blgRes.json() || []);
-      setFaqs(await faqRes.json() || []);
-      setEmailTemplates(await tempRes.json() || []);
+      setServices(await parseArrayResponse(srvRes));
+      setStaff(await parseArrayResponse(stfRes));
+      setBookings(await parseArrayResponse(bkRes));
+      setCustomers(await parseArrayResponse(custRes));
+      setReviews(await parseArrayResponse(revRes));
+      setBlogs(await parseArrayResponse(blgRes));
+      setFaqs(await parseArrayResponse(faqRes));
+      setEmailTemplates(await parseArrayResponse(tempRes));
     } catch (e) {
       console.error("Failed database synchronizations for business: " + businessId, e);
+      clearBusinessData();
     }
+  };
+
+  const handleManageTenant = async (tenant: BusinessTenant) => {
+    clearBusinessData();
+    setActiveBusiness(tenant);
+    setCurrentRole(UserRole.BUSINESS_ADMIN);
+    setActiveTab("dashboard");
+    await fetchBusinessData(tenant.id);
   };
 
   // Core Authentication & Booking Tracking routines
@@ -480,9 +504,8 @@ export default function App() {
       setOnboardingModalOpen(false);
 
       await fetchTenants();
-      setActiveBusiness(data);
-      setCurrentRole(UserRole.BUSINESS_ADMIN);
-      setActiveTab("dashboard");
+      if (data.merchantUser) setCurrentUser(data.merchantUser);
+      await handleManageTenant(data);
       setAppView("backoffice");
     } catch (e: any) {
       alert("Platform onboarding failure: " + e.message);
@@ -1400,8 +1423,7 @@ export default function App() {
                 auditLogs={auditLogs}
                 fetchAuditLogs={fetchAuditLogs}
                 setOnboardingModalOpen={setOnboardingModalOpen}
-                setCurrentRole={setCurrentRole}
-                setActiveTab={setActiveTab}
+                onManageTenant={handleManageTenant}
               />
             )}
 

@@ -22,7 +22,7 @@ service cloud.firestore {
     // Check if the user is the system Super Admin
     function isSuperAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == "markjames.villagonzalo06@gmail.com" &&
+        request.auth.token.email == "unibook562026@gmail.com" &&
         request.auth.token.email_verified == true
       );
     }
@@ -126,5 +126,12 @@ service cloud.firestore {
       allow read: if true; // anyone can view blocked calendar slots
       allow write: if isSuperAdmin() || isSignedIn();
     }
+
+    // 13. Category Templates Collection
+    match /categoryTemplates/{templateId} {
+      allow read: if true;
+      allow write: if isSuperAdmin() || isSignedIn();
+    }
   }
 }
+

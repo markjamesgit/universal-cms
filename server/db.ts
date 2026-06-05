@@ -104,50 +104,90 @@ function loadFirebaseConfig(): Record<string, string> | null {
 }
 
 const firebaseConfig = loadFirebaseConfig();
+const isVercelRuntime = Boolean(process.env.VERCEL);
+
+function resolveFirestoreDatabaseId(): string | undefined {
+  const fromEnv = process.env.FIRESTORE_DATABASE_ID?.trim();
+  if (fromEnv && fromEnv !== "(default)") return fromEnv;
+  return undefined;
+}
 
 let firebaseApp: any = null;
 let firestoreDb: any = null;
 
 if (firebaseConfig) {
   try {
-    firebaseApp = initializeApp(firebaseConfig);
-    firestoreDb = initializeFirestore(firebaseApp, {
-      experimentalForceLongPolling: true,
-    }, firebaseConfig.firestoreDatabaseId);
-    console.log(`[FIREBASE] Integrated Web SDK successfully with Long Polling! Target Project: ${firebaseConfig.projectId}`);
+    const { firestoreDatabaseId: _ignoredDbId, ...appConfig } = firebaseConfig;
+    firebaseApp = initializeApp(appConfig);
+    const firestoreSettings = isVercelRuntime
+      ? { preferRest: true as const }
+      : { experimentalForceLongPolling: true as const };
+    const namedDb = resolveFirestoreDatabaseId();
+    firestoreDb = namedDb
+      ? initializeFirestore(firebaseApp, firestoreSettings, namedDb)
+      : initializeFirestore(firebaseApp, firestoreSettings);
+    console.log(
+      `[FIREBASE] Connected to project ${firebaseConfig.projectId}` +
+        (namedDb ? ` (database: ${namedDb})` : " (default database)")
+    );
   } catch (err) {
     console.error("[FIREBASE ERROR] Connection failed: ", err);
   }
 }
 
+function scopedBusinessId(businessId?: string): string | null {
+  const id = businessId?.trim();
+  return id || null;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 // Global Remote Firestore Wrappers
-async function loadCollection(colName: string): Promise<any[]> {
-  if (!firestoreDb) return [];
+async function loadCollection(colName: string): Promise<{ items: any[]; readFailed: boolean }> {
+  if (!firestoreDb) return { items: [], readFailed: false };
   try {
     const colRef = collection(firestoreDb, colName);
     const q = query(colRef, where("serverSecret", "==", "A7xK9_SERVER_SECURE_TOKEN_2026"));
-    const snapshot = await getDocs(q);
+    const snapshot = await withTimeout(getDocs(q), 12000, `Firestore read ${colName}`);
     const list: any[] = [];
     snapshot.forEach(docRef => {
       const data = docRef.data();
       delete data.serverSecret;
       list.push({ id: docRef.id, ...data });
     });
-    return list;
+    return { items: list, readFailed: false };
   } catch (err) {
     console.error(`[FIREBASE READ ERROR] Fail in col: ${colName}`, err);
-    return [];
+    return { items: [], readFailed: true };
   }
 }
 
-async function saveDocument(colName: string, id: string, data: any): Promise<void> {
-  if (!firestoreDb) return;
+async function saveDocument(colName: string, id: string, data: any, critical = false): Promise<boolean> {
+  if (!firestoreDb) {
+    if (critical) {
+      console.warn(`[FIREBASE] Skipped critical write for ${colName}/${id} — Firestore not connected.`);
+    }
+    return false;
+  }
   try {
     const docRef = doc(firestoreDb, colName, id);
     const payload = { ...data, serverSecret: "A7xK9_SERVER_SECURE_TOKEN_2026" };
-    await setDoc(docRef, payload);
+    await withTimeout(setDoc(docRef, payload), 12000, `Firestore write ${colName}/${id}`);
+    return true;
   } catch (err) {
     console.error(`[FIREBASE WRITE ERROR] Fail in col: ${colName} doc: ${id}`, err);
+    if (critical) throw err;
+    return false;
   }
 }
 
@@ -338,13 +378,43 @@ const INITIAL_DB: DBStructure = {
   categoryTemplates: DEFAULT_CATEGORY_TEMPLATES,
 };
 
+/** Clean platform seed for production — no demo salons/bookings */
+const PLATFORM_SEED: DBStructure = {
+  users: [
+    { id: "u-1", email: "unibook562026@gmail.com", name: "Super Platform Admin", role: UserRole.SUPER_ADMIN },
+  ],
+  businesses: [],
+  services: [],
+  staff: [],
+  customers: [],
+  bookings: [],
+  reviews: [],
+  blogs: [],
+  faqs: [],
+  emailTemplates: [],
+  auditLogs: [
+    { id: "log-1", createdAt: new Date().toISOString(), actor: "System Seed", action: "PLATFORM_INIT", details: "Production platform initialized with empty tenant registry." },
+  ],
+  blockedSlots: [],
+  categoryTemplates: DEFAULT_CATEGORY_TEMPLATES,
+};
+
+function seedDatasetForRuntime(): DBStructure {
+  return isVercelRuntime ? { ...PLATFORM_SEED } : { ...INITIAL_DB };
+}
+
 export class Database {
   private data: DBStructure;
+  private readyPromise: Promise<void>;
 
   constructor() {
-    this.data = { ...INITIAL_DB };
+    this.data = seedDatasetForRuntime();
     this.load();
-    this.initializeFirestore();
+    this.readyPromise = this.initializeFirestore();
+  }
+
+  whenReady(): Promise<void> {
+    return this.readyPromise;
   }
 
   // Dual Synchronizer: Pulls from remote Cloud Firestore and merges into live Node.js container context
@@ -355,68 +425,69 @@ export class Database {
     }
     console.log("[FIREBASE] Syncing memory with remote Firestore collection ledger...");
     try {
-      const loadedBusinesses = await loadCollection("businesses");
+      await withTimeout(this.syncFirestoreState(), 20000, "Firestore initialization");
+    } catch (err) {
+      console.error("[FIREBASE ENGINE ERROR] Initialization task aborted: ", err);
+    }
+  }
+
+  private async syncFirestoreState() {
+    try {
+      const businessesResult = await loadCollection("businesses");
+      if (businessesResult.readFailed) {
+        console.error("[FIREBASE] Business read failed — keeping in-memory state to avoid accidental re-seed.");
+        return;
+      }
+
+      const loadedBusinesses = businessesResult.items;
       if (loadedBusinesses.length === 0) {
-        console.log("[FIREBASE SEEDING] Cloud Database is clean. Provisioning templates now...");
-        
-        for (const item of INITIAL_DB.businesses) {
-          await saveDocument("businesses", item.id, item);
+        const seed = seedDatasetForRuntime();
+        console.log(`[FIREBASE SEEDING] Cloud database is empty. Seeding ${isVercelRuntime ? "production" : "development"} defaults...`);
+
+        for (const item of seed.businesses) await saveDocument("businesses", item.id, item);
+        for (const item of seed.users) await saveDocument("users", item.id, item);
+        for (const item of seed.services) await saveDocument("services", item.id, item);
+        for (const item of seed.staff) await saveDocument("staff", item.id, item);
+        for (const item of seed.customers) await saveDocument("customers", item.id, item);
+        for (const item of seed.bookings) await saveDocument("bookings", item.id, item);
+        for (const item of seed.reviews) await saveDocument("reviews", item.id, item);
+        for (const item of seed.blogs) await saveDocument("blogs", item.id, item);
+        for (const item of seed.faqs) await saveDocument("faqs", item.id, item);
+        for (const item of seed.emailTemplates) await saveDocument("emailTemplates", `${item.businessId}-${item.key}`, item);
+        for (const item of seed.auditLogs) await saveDocument("auditLogs", item.id, item);
+        for (const item of seed.categoryTemplates || DEFAULT_CATEGORY_TEMPLATES) {
+          await saveDocument("categoryTemplates", item.id, item);
         }
-        for (const item of INITIAL_DB.users) {
-          await saveDocument("users", item.id, item);
-        }
-        for (const item of INITIAL_DB.services) {
-          await saveDocument("services", item.id, item);
-        }
-        for (const item of INITIAL_DB.staff) {
-          await saveDocument("staff", item.id, item);
-        }
-        for (const item of INITIAL_DB.customers) {
-          await saveDocument("customers", item.id, item);
-        }
-        for (const item of INITIAL_DB.bookings) {
-          await saveDocument("bookings", item.id, item);
-        }
-        for (const item of INITIAL_DB.reviews) {
-          await saveDocument("reviews", item.id, item);
-        }
-        for (const item of INITIAL_DB.blogs) {
-          await saveDocument("blogs", item.id, item);
-        }
-        for (const item of INITIAL_DB.faqs) {
-          await saveDocument("faqs", item.id, item);
-        }
-        for (const item of INITIAL_DB.emailTemplates) {
-          await saveDocument("emailTemplates", `${item.businessId}-${item.key}`, item);
-        }
-        for (const item of INITIAL_DB.auditLogs) {
-          await saveDocument("auditLogs", item.id, item);
-        }
-        
+
         console.log("[FIREBASE COMPLETE] Seeding complete! State is secured remotely.");
-        this.data = { ...INITIAL_DB };
+        this.data = { ...seed };
       } else {
         console.log("[FIREBASE RESTORING] Remote state found. Discharging disk files...");
         this.data.businesses = loadedBusinesses;
-        this.data.users = await loadCollection("users");
-        this.data.services = await loadCollection("services");
-        this.data.staff = await loadCollection("staff");
-        this.data.customers = await loadCollection("customers");
-        this.data.bookings = await loadCollection("bookings");
-        this.data.reviews = await loadCollection("reviews");
-        this.data.blogs = await loadCollection("blogs");
-        this.data.faqs = await loadCollection("faqs");
-        this.data.emailTemplates = await loadCollection("emailTemplates");
-        this.data.auditLogs = await loadCollection("auditLogs");
-        
+        this.data.users = (await loadCollection("users")).items;
+        this.data.services = (await loadCollection("services")).items;
+        this.data.staff = (await loadCollection("staff")).items;
+        this.data.customers = (await loadCollection("customers")).items;
+        this.data.bookings = (await loadCollection("bookings")).items;
+        this.data.reviews = (await loadCollection("reviews")).items;
+        this.data.blogs = (await loadCollection("blogs")).items;
+        this.data.faqs = (await loadCollection("faqs")).items;
+        this.data.emailTemplates = (await loadCollection("emailTemplates")).items;
+        this.data.auditLogs = (await loadCollection("auditLogs")).items;
+        this.data.categoryTemplates = (await loadCollection("categoryTemplates")).items;
+        if (!this.data.categoryTemplates?.length) {
+          this.data.categoryTemplates = [...DEFAULT_CATEGORY_TEMPLATES];
+        }
+
         const slots = await loadCollection("blockedSlots");
-        this.data.blockedSlots = slots || [];
-        
+        this.data.blockedSlots = slots.items || [];
+
         console.log("[FIREBASE OK] Remote sync operation ended successfully.");
       }
-      this.save();
+      this.saveLocal();
     } catch (err) {
-      console.error("[FIREBASE ENGINE ERROR] Initialization task aborted: ", err);
+      console.error("[FIREBASE SYNC ERROR] ", err);
+      throw err;
     }
   }
 
@@ -435,10 +506,10 @@ export class Database {
         }
         if (!this.data.categoryTemplates || this.data.categoryTemplates.length === 0) {
           this.data.categoryTemplates = [...DEFAULT_CATEGORY_TEMPLATES];
-          this.save();
+          this.saveLocal();
         }
       } else {
-        this.save();
+        this.saveLocal();
       }
     } catch (e) {
       console.error("Failed to load schema from db.json. Defaulting to initial dataset.", e);
@@ -446,6 +517,11 @@ export class Database {
   }
 
   private save(): void {
+    this.saveLocal();
+  }
+
+  private saveLocal(): void {
+    if (process.env.VERCEL && firestoreDb) return;
     try {
       fs.writeFileSync(DB_PATH, JSON.stringify(this.data, null, 2), "utf-8");
     } catch (e) {
@@ -462,20 +538,26 @@ export class Database {
     return this.data.businesses.find(b => b.slug.toLowerCase() === slug.toLowerCase());
   }
 
+  getBusinessByContactEmail(email: string): BusinessTenant | undefined {
+    const normalized = email.trim().toLowerCase();
+    return this.data.businesses.find(b => b.contactEmail.trim().toLowerCase() === normalized);
+  }
+
   getBusinessById(id: string): BusinessTenant | undefined {
     return this.data.businesses.find(b => b.id === id);
   }
 
-  createBusiness(b: Omit<BusinessTenant, "id" | "createdAt" | "isActive">): BusinessTenant {
+  async createBusiness(b: Omit<BusinessTenant, "id" | "createdAt" | "isActive">): Promise<BusinessTenant> {
+    const normalizedEmail = (b.contactEmail || "").trim().toLowerCase();
     const newBusiness: BusinessTenant = {
       ...b,
+      contactEmail: normalizedEmail || `hello@${b.slug}.com`,
       id: "b-" + Math.random().toString(36).substr(2, 9),
       isActive: true,
       createdAt: new Date().toISOString()
     };
     this.data.businesses.push(newBusiness);
 
-    // Bootstrap default emails templates
     const templates: EmailTemplate[] = [
       {
         businessId: newBusiness.id,
@@ -486,7 +568,6 @@ export class Database {
     ];
     this.data.emailTemplates.push(...templates);
 
-    // Bootstrap placeholder FAQs
     const defaultFAQ: FAQItem = {
       id: "fq-" + Math.random().toString(36).substr(2, 9),
       businessId: newBusiness.id,
@@ -497,14 +578,38 @@ export class Database {
 
     this.save();
 
-    // Propagate Async
-    saveDocument("businesses", newBusiness.id, newBusiness);
+    await saveDocument("businesses", newBusiness.id, newBusiness);
     for (const t of templates) {
-      saveDocument("emailTemplates", `${t.businessId}-${t.key}`, t);
+      await saveDocument("emailTemplates", `${t.businessId}-${t.key}`, t);
     }
-    saveDocument("faqs", defaultFAQ.id, defaultFAQ);
+    await saveDocument("faqs", defaultFAQ.id, defaultFAQ);
 
     return newBusiness;
+  }
+
+  async ensureMerchantUser(business: BusinessTenant): Promise<User> {
+    const email = business.contactEmail.trim().toLowerCase();
+    const existing = this.getUserByEmail(email);
+    if (existing) {
+      if (!existing.businessId) {
+        const updated = this.updateUser(existing.id, { businessId: business.id, role: UserRole.BUSINESS_ADMIN });
+        await saveDocument("users", updated.id, updated);
+        return updated;
+      }
+      return existing;
+    }
+
+    const newUser: User = {
+      id: "u-" + Math.random().toString(36).substr(2, 9),
+      email,
+      name: `${business.name} Owner`,
+      role: UserRole.BUSINESS_ADMIN,
+      businessId: business.id,
+    };
+    this.data.users.push(newUser);
+    this.save();
+    await saveDocument("users", newUser.id, newUser);
+    return newUser;
   }
 
   updateBusiness(id: string, updates: Partial<BusinessTenant>): BusinessTenant {
@@ -553,10 +658,9 @@ export class Database {
 
   // --- SERVICES ---
   getServices(businessId?: string): Service[] {
-    if (businessId) {
-      return this.data.services.filter(s => s.businessId === businessId);
-    }
-    return this.data.services;
+    const scoped = scopedBusinessId(businessId);
+    if (!scoped) return [];
+    return this.data.services.filter(s => s.businessId === scoped);
   }
 
   createService(s: Omit<Service, "id">): Service {
@@ -593,10 +697,9 @@ export class Database {
 
   // --- STAFF ---
   getStaff(businessId?: string): Staff[] {
-    if (businessId) {
-      return this.data.staff.filter(st => st.businessId === businessId);
-    }
-    return this.data.staff;
+    const scoped = scopedBusinessId(businessId);
+    if (!scoped) return [];
+    return this.data.staff.filter(st => st.businessId === scoped);
   }
 
   createStaff(st: Omit<Staff, "id" | "rating">): Staff {
@@ -634,10 +737,9 @@ export class Database {
 
   // --- CUSTOMERS ---
   getCustomers(businessId?: string): Customer[] {
-    if (businessId) {
-      return this.data.customers.filter(c => c.businessId === businessId);
-    }
-    return this.data.customers;
+    const scoped = scopedBusinessId(businessId);
+    if (!scoped) return [];
+    return this.data.customers.filter(c => c.businessId === scoped);
   }
 
   getOrCreateCustomer(businessId: string, email: string, name: string, phone: string): Customer {
@@ -679,10 +781,9 @@ export class Database {
 
   // --- BOOKINGS ---
   getBookings(businessId?: string): Booking[] {
-    if (businessId) {
-      return this.data.bookings.filter(bk => bk.businessId === businessId);
-    }
-    return this.data.bookings;
+    const scoped = scopedBusinessId(businessId);
+    if (!scoped) return [];
+    return this.data.bookings.filter(bk => bk.businessId === scoped);
   }
 
   createBooking(bk: Omit<Booking, "id" | "createdAt" | "status"> & { status?: Booking["status"] }): Booking {
@@ -761,10 +862,9 @@ export class Database {
     if (!this.data.blockedSlots) {
       this.data.blockedSlots = [];
     }
-    if (businessId) {
-      return this.data.blockedSlots.filter(bs => bs.businessId === businessId);
-    }
-    return this.data.blockedSlots;
+    const scoped = scopedBusinessId(businessId);
+    if (!scoped) return [];
+    return this.data.blockedSlots.filter(bs => bs.businessId === scoped);
   }
 
   createBlockedSlot(slot: Omit<BlockedSlot, "id" | "createdAt">): BlockedSlot {
@@ -802,10 +902,8 @@ export class Database {
 
   // --- REVIEWS ---
   getReviews(businessId?: string, approvedOnly = false): Review[] {
-    let list = this.data.reviews;
-    if (businessId) {
-      list = list.filter(r => r.businessId === businessId);
-    }
+    const scoped = scopedBusinessId(businessId);
+    let list = scoped ? this.data.reviews.filter(r => r.businessId === scoped) : [];
     if (approvedOnly) {
       list = list.filter(r => r.approved);
     }
@@ -840,10 +938,9 @@ export class Database {
 
   // --- BLOGS ---
   getBlogs(businessId?: string): BlogPost[] {
-    if (businessId) {
-      return this.data.blogs.filter(b => b.businessId === businessId);
-    }
-    return this.data.blogs;
+    const scoped = scopedBusinessId(businessId);
+    if (!scoped) return [];
+    return this.data.blogs.filter(b => b.businessId === scoped);
   }
 
   createBlog(b: Omit<BlogPost, "id" | "date">): BlogPost {
@@ -870,10 +967,9 @@ export class Database {
 
   // --- FAQs ---
   getFAQs(businessId?: string): FAQItem[] {
-    if (businessId) {
-      return this.data.faqs.filter(f => f.businessId === businessId);
-    }
-    return this.data.faqs;
+    const scoped = scopedBusinessId(businessId);
+    if (!scoped) return [];
+    return this.data.faqs.filter(f => f.businessId === scoped);
   }
 
   createFAQ(f: Omit<FAQItem, "id">): FAQItem {
@@ -899,7 +995,9 @@ export class Database {
 
   // --- EMAIL TEMPLATES ---
   getEmailTemplates(businessId: string): EmailTemplate[] {
-    return this.data.emailTemplates.filter(et => et.businessId === businessId);
+    const scoped = scopedBusinessId(businessId);
+    if (!scoped) return [];
+    return this.data.emailTemplates.filter(et => et.businessId === scoped);
   }
 
   updateEmailTemplate(businessId: string, key: string, updates: Pick<EmailTemplate, "subject" | "body">): EmailTemplate {
@@ -961,6 +1059,7 @@ export class Database {
     };
     this.data.categoryTemplates.push(template);
     this.save();
+    saveDocument("categoryTemplates", template.id, template);
     return template;
   }
 
@@ -970,6 +1069,7 @@ export class Database {
     if (idx === -1) throw new Error("Category template not found");
     this.data.categoryTemplates[idx] = { ...this.data.categoryTemplates[idx], ...updates };
     this.save();
+    saveDocument("categoryTemplates", id, this.data.categoryTemplates[idx]);
     return this.data.categoryTemplates[idx];
   }
 
@@ -977,7 +1077,9 @@ export class Database {
     if (!this.data.categoryTemplates) return;
     this.data.categoryTemplates = this.data.categoryTemplates.filter((t) => t.id !== id);
     this.save();
+    deleteDocument("categoryTemplates", id);
   }
 }
 
 export const dbInstance = new Database();
+export const dbReady = dbInstance.whenReady();

@@ -22,8 +22,12 @@ export function getPlatformHostname(): string {
 
 export function useTenantSubdomains(): boolean {
   if (process.env.TENANT_SUBDOMAINS === "false") return false;
+  if (process.env.TENANT_SUBDOMAINS === "true") return true;
   const host = getPlatformHostname();
-  return !host.includes("localhost") && !host.startsWith("127.");
+  if (host.includes("localhost") || host.startsWith("127.")) return false;
+  // Vercel default URLs do not support wildcard tenant subdomains out of the box.
+  if (host.endsWith(".vercel.app")) return false;
+  return true;
 }
 
 export function buildTenantSiteUrl(slug: string): string {
