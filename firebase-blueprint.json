@@ -1,0 +1,247 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents an authorized user of the platform (Super Admin, Business Admin, or Staff)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["SUPER_ADMIN", "BUSINESS_ADMIN", "STAFF", "CUSTOMER"] },
+        "businessId": { "type": "string" }
+      },
+      "required": ["id", "email", "name", "role"]
+    },
+    "BusinessTenant": {
+      "title": "Business Tenant",
+      "description": "A tenant salon/studio registered on the platform",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "slug": { "type": "string" },
+        "name": { "type": "string" },
+        "logo": { "type": "string" },
+        "templateType": { "type": "string" },
+        "heroHeading": { "type": "string" },
+        "heroSubheading": { "type": "string" },
+        "aboutText": { "type": "string" },
+        "contactEmail": { "type": "string", "format": "email" },
+        "contactPhone": { "type": "string" },
+        "contactAddress": { "type": "string" },
+        "theme": { "type": "object" },
+        "seo": { "type": "object" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "slug", "name", "logo", "templateType", "contactEmail", "isActive", "createdAt"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "A bookable service offered by a specific tenant",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "duration": { "type": "number" },
+        "image": { "type": "string" },
+        "staffIds": { "type": "array" }
+      },
+      "required": ["id", "businessId", "name", "price", "duration"]
+    },
+    "Staff": {
+      "title": "Staff Member",
+      "description": "An employee of a business who can perform services",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessId": { "type": "string" },
+        "name": { "type": "string" },
+        "photo": { "type": "string" },
+        "position": { "type": "string" },
+        "rating": { "type": "number" },
+        "workingHours": { "type": "object" }
+      },
+      "required": ["id", "businessId", "name", "position"]
+    },
+    "Customer": {
+      "title": "Customer Profile",
+      "description": "Historical details about customers who have booked at a tenant's business",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "tags": { "type": "array" },
+        "notes": { "type": "string" },
+        "totalSpending": { "type": "number" },
+        "lastAppointment": { "type": "string" }
+      },
+      "required": ["id", "businessId", "name", "email", "phone"]
+    },
+    "Booking": {
+      "title": "Booking Details",
+      "description": "An appointment booked by a customer for a service with a staff member",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessId": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "staffId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string", "format": "email" },
+        "customerPhone": { "type": "string" },
+        "date": { "type": "string" },
+        "timeSlot": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"] },
+        "price": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "cancelRemarks": { "type": "string" }
+      },
+      "required": ["id", "businessId", "serviceId", "staffId", "customerName", "customerEmail", "customerPhone", "date", "timeSlot", "status", "price", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A customer review left for a service post-appointment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "serviceName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "date": { "type": "string" },
+        "approved": { "type": "boolean" }
+      },
+      "required": ["id", "businessId", "customerName", "rating", "approved"]
+    },
+    "BlogPost": {
+      "title": "Blog Post",
+      "description": "An educational or promotional post published by a tenant owner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessId": { "type": "string" },
+        "title": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string" },
+        "image": { "type": "string" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "author": { "type": "string" }
+      },
+      "required": ["id", "businessId", "title", "content", "date", "author"]
+    },
+    "FAQItem": {
+      "title": "FAQ Item",
+      "description": "Frequently asked questions for a business template",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessId": { "type": "string" },
+        "question": { "type": "string" },
+        "answer": { "type": "string" }
+      },
+      "required": ["id", "businessId", "question", "answer"]
+    },
+    "EmailTemplate": {
+      "title": "Email Template",
+      "description": "Custom templates for service transactions",
+      "type": "object",
+      "properties": {
+        "businessId": { "type": "string" },
+        "key": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" }
+      },
+      "required": ["businessId", "key", "subject", "body"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "High level system ledger actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "actor": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["id", "createdAt", "actor", "action", "details"]
+    },
+    "BlockedSlot": {
+      "title": "Blocked Slot",
+      "description": "Dates or times blocked by operators from receiving reservations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "businessId": { "type": "string" },
+        "staffId": { "type": "string" },
+        "date": { "type": "string" },
+        "timeSlot": { "type": "string" },
+        "reason": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "businessId", "date", "timeSlot", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Admin and staff identification profiles"
+    },
+    "/businesses/{businessId}": {
+      "schema": "BusinessTenant",
+      "description": "Registered business details and configurations"
+    },
+    "/services/{serviceId}": {
+      "schema": "Service",
+      "description": "Bookable service options"
+    },
+    "/staff/{staffId}": {
+      "schema": "Staff",
+      "description": "Working salon specialists"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Unique historical customer CRM files"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Transactional schedule logs"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Approved and raw client feedback"
+    },
+    "/blogs/{blogId}": {
+      "schema": "BlogPost",
+      "description": "Promotional or educational blog content"
+    },
+    "/faqs/{faqId}": {
+      "schema": "FAQItem",
+      "description": "General FAQ entries"
+    },
+    "/emailTemplates/{templateId}": {
+      "schema": "EmailTemplate",
+      "description": "Custom client notification content overrides"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Central ledger records"
+    },
+    "/blockedSlots/{slotId}": {
+      "schema": "BlockedSlot",
+      "description": "Operators-blocked reservation blocks"
+    }
+  }
+}

@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;900&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-serif: 'Playfair Display', Georgia, Cambria, serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  
+  html, body {
+    font-family: var(--font-sans);
+    background-color: #0A0A0B;
+    overflow: hidden;
+    height: 100%;
+  }
+}
+
+/* Custom Dynamic Admin Font classes */
+.font-choice-inter {
+  font-family: 'Inter', sans-serif !important;
+}
+.font-choice-space-grotesk {
+  font-family: 'Space Grotesk', sans-serif !important;
+}
+.font-choice-playfair {
+  font-family: 'Playfair Display', serif !important;
+}
+.font-choice-jetbrains-mono {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* Custom Dynamic Size presets for responsive layout brands scaling */
+.size-choice-small {
+  font-size: 13px !important;
+}
+.size-choice-small p, .size-choice-small span, .size-choice-small td, .size-choice-small li, .size-choice-small select, .size-choice-small input, .size-choice-small textarea {
+  font-size: 12px !important;
+}
+.size-choice-small h1, .size-choice-small h2, .size-choice-small h3, .size-choice-small h4, .size-choice-small h5 {
+  scale: 0.95;
+  transform-origin: left center;
+}
+
+.size-choice-regular {
+  font-size: 14px !important;
+}
+
+.size-choice-large {
+  font-size: 16px !important;
+}
+.size-choice-large p, .size-choice-large span, .size-choice-large td, .size-choice-large li, .size-choice-large select, .size-choice-large input, .size-choice-large textarea {
+  font-size: 15px !important;
+}
+.size-choice-large h1, .size-choice-large h2, .size-choice-large h3, .size-choice-large h4, .size-choice-large h5 {
+  scale: 1.05;
+  transform-origin: left center;
+}
+
+.size-choice-xl {
+  font-size: 18px !important;
+}
+.size-choice-xl p, .size-choice-xl span, .size-choice-xl td, .size-choice-xl li, .size-choice-xl select, .size-choice-xl input, .size-choice-xl textarea {
+  font-size: 17px !important;
+}
+.size-choice-xl h1, .size-choice-xl h2, .size-choice-xl h3, .size-choice-xl h4, .size-choice-xl h5 {
+  scale: 1.15;
+  transform-origin: left center;
+}
+
+/* Custom gorgeous micro-scrollbar designed for frosted interfaces */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Glass panel highlighting rules */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Color palettes based on business theme choice */
+.theme-palette-neutral {
+  --primary: #ffffff;
+  --primary-hover: #e5e5e5;
+  --primary-glow: rgba(255, 255, 255, 0.2);
+}
+
+.theme-palette-emerald {
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --primary-glow: rgba(16, 185, 129, 0.2);
+}
+
+.theme-palette-amber {
+  --primary: #f59e0b;
+  --primary-hover: #d97706;
+  --primary-glow: rgba(245, 158, 11, 0.2);
+}
+
+.theme-palette-indigo {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-glow: rgba(99, 102, 241, 0.2);
+}
+
+.theme-palette-rose {
+  --primary: #ec4899;
+  --primary-hover: #db2777;
+  --primary-glow: rgba(236, 72, 153, 0.2);
+}
+
+.theme-palette-violet {
+  --primary: #8b5cf6;
+  --primary-hover: #7c3aed;
+  --primary-glow: rgba(139, 92, 246, 0.2);
+}
+
+.theme-palette-retro-slate {
+  --primary: #38bdf8;
+  --primary-hover: #0ea5e9;
+  --primary-glow: rgba(56, 189, 248, 0.2);
+}

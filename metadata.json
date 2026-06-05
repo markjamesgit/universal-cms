@@ -1,0 +1,6 @@
+{
+  "name": "Universal Booking Appointment CMS",
+  "description": "A powerful multi-tenant booking & scheduling system with custom site CMS builders, staff dashboards, CRM, and insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
