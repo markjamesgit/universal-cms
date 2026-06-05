@@ -84,14 +84,14 @@ async function buildApp(): Promise<express.Express> {
         });
       }
 
-      const user = dbInstance.getUserByEmail(email);
-      if (user?.businessId) {
-        const linkedBusiness = dbInstance.getBusinessById(user.businessId);
+      const linkedUser = dbInstance.getUserByEmail(email);
+      if (linkedUser?.businessId) {
+        const linkedBusiness = dbInstance.getBusinessById(linkedUser.businessId);
         if (linkedBusiness) {
           return res.json({
-            role: user.role,
+            role: linkedUser.role,
             business: linkedBusiness,
-            user,
+            user: linkedUser,
           });
         }
       }
